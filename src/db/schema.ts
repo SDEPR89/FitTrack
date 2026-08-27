@@ -1,5 +1,5 @@
 import { relations } from 'drizzle-orm';
-import { pgTable, serial, integer, numeric, timestamp, varchar } from 'drizzle-orm/pg-core';
+import { pgTable, serial, integer, numeric, varchar } from 'drizzle-orm/pg-core';
 
 // 1. Exercises Table
 export const exercises = pgTable('exercises', {
@@ -17,7 +17,6 @@ export const workoutSets = pgTable('workout_sets', {
   setNumber: integer('set_number').notNull(),
   weightKg: numeric('weight_kg', { precision: 5, scale: 2 }).notNull(),
   reps: integer('reps').notNull(),
-  performedAt: timestamp('performed_at').defaultNow().notNull(),
 });
 
 // 3. Define Drizzle Relations
