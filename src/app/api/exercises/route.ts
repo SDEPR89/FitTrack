@@ -1,8 +1,8 @@
 import { db } from "@/src/db";
 import { exercises } from "@/src/db/schema";
-import { NextResponse } from "next/server";
+import { NextResponse, NextRequest } from "next/server";
 
-export async function GET(request: Request) {
-  const names = await db.select().from(exercises);
-  return NextResponse.json(names);
+export async function GET(request: NextRequest) {
+  const allExercises = await db.select().from(exercises);
+  return NextResponse.json(allExercises);
 }

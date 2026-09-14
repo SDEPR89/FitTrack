@@ -15,6 +15,13 @@
       "when": 1787843817466,
       "tag": "0001_fix: remove timestamp",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1789203540192,
+      "tag": "0002_fix: adding_check_status_in_workoutset",
+      "breakpoints": true
     }
   ]
 }
