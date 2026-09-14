@@ -24,7 +24,7 @@ export const workoutSets = pgTable("workout_sets", {
   setNumber: integer("set_number").notNull(),
   weightKg: numeric("weight_kg", { precision: 5, scale: 2 }).notNull(),
   reps: integer("reps"),
-  ischecked: boolean("is_checked").default(false),
+  isChecked: boolean("is_checked").default(false),
 });
 
 // 3. Define Drizzle Relations
