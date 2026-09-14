@@ -13,15 +13,16 @@ async function main() {
   console.log("Seeding database...");
 
   // Optional: Clear existing data to start fresh
-  // await db.delete(schema.users);
+  await db.delete(schema.workoutSets);
+  await db.delete(schema.exercises);
 
   // Insert mock data
   await db.insert(schema.exercises).values([
-    { id: 1, name: "BENCH PRESS", category: '"UPPER BODY' },
-    { id: 2, name: "DIP", category: '"UPPER BODY' },
-    { id: 3, name: "PULL UP", category: '"UPPER BODY' },
-    { id: 4, name: "SQUAT", category: '"LOWER BODY' },
-    { id: 5, name: "PISTON SQUAT", category: '"SKILL' },
+    { id: 1, name: "BENCH PRESS", category: "UPPER BODY" },
+    { id: 2, name: "DIP", category: "UPPER BODY" },
+    { id: 3, name: "PULL UP", category: "UPPER BODY" },
+    { id: 4, name: "SQUAT", category: "LOWER BODY" },
+    { id: 5, name: "PISTON SQUAT", category: "SKILL" },
   ]);
 
   await db.insert(schema.workoutSets).values([
