@@ -7,9 +7,19 @@ export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  const idParam = (await params).id;
-  const id = Number(idParam);
-  const result = await db.select().from(exercises).where(eq(exercises.id, id));
+  try {
+    const idParam = (await params).id;
+    const id = Number(idParam);
+    const result = await db
+      .select()
+      .from(exercises)
+      .where(eq(exercises.id, id));
 
-  return NextResponse.json(result[0]);
+    return NextResponse.json(result[0]);
+  } catch (error) {
+    return NextResponse.json(
+      { error: "Failed to update resource" },
+      { status: 500 },
+    );
+  }
 }

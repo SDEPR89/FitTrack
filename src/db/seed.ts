@@ -12,23 +12,30 @@ const db = drizzle(pool, { schema });
 async function main() {
   console.log("Seeding database...");
 
-  // Optional: Clear existing data to start fresh
   await db.delete(schema.workoutSets);
   await db.delete(schema.exercises);
 
-  // Insert mock data
-  await db.insert(schema.exercises).values([
-    { id: 1, name: "BENCH PRESS", category: "UPPER BODY" },
-    { id: 2, name: "DIP", category: "UPPER BODY" },
-    { id: 3, name: "PULL UP", category: "UPPER BODY" },
-    { id: 4, name: "SQUAT", category: "LOWER BODY" },
-    { id: 5, name: "PISTON SQUAT", category: "SKILL" },
-  ]);
+  const insertedExercises = await db
+    .insert(schema.exercises)
+    .values([
+      { name: "BENCH PRESS", category: "UPPER BODY" },
+      { name: "DIP", category: "UPPER BODY" },
+      { name: "PULL UP", category: "UPPER BODY" },
+      { name: "SQUAT", category: "LOWER BODY" },
+      { name: "PISTON SQUAT", category: "SKILL" },
+    ])
+    .returning();
+
+  const benchPress = insertedExercises.find((e) => e.name === "BENCH PRESS");
+
+  if (!benchPress) {
+    throw new Error("Bench Press exercise not found after seeding");
+  }
 
   await db.insert(schema.workoutSets).values([
-    { id: 1, exerciseId: 1, setNumber: 1, weightKg: "60", reps: 8 },
-    { id: 2, exerciseId: 1, setNumber: 2, weightKg: "65", reps: 7 },
-    { id: 3, exerciseId: 1, setNumber: 3, weightKg: "70", reps: 6 },
+    { exerciseId: benchPress.id, setNumber: 1, weightKg: "60", reps: 8 },
+    { exerciseId: benchPress.id, setNumber: 2, weightKg: "65", reps: 7 },
+    { exerciseId: benchPress.id, setNumber: 3, weightKg: "70", reps: 6 },
   ]);
 
   console.log("Seeding complete.");
