@@ -24,6 +24,12 @@ async function main() {
     { id: 5, name: "PISTON SQUAT", category: '"SKILL' },
   ]);
 
+  await db.insert(schema.workoutSets).values([
+    { id: 1, exerciseId: 1, setNumber: 1, weightKg: "60", reps: 8 },
+    { id: 2, exerciseId: 1, setNumber: 2, weightKg: "65", reps: 7 },
+    { id: 3, exerciseId: 1, setNumber: 3, weightKg: "70", reps: 6 },
+  ]);
+
   console.log("Seeding complete.");
   await pool.end();
 }
