@@ -46,6 +46,7 @@ export async function DELETE(
 
     return NextResponse.json({ deleteExercise }, { status: 200 });
   } catch (error) {
+
     if (
       typeof error === "object" &&
       error !== null &&

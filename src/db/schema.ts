@@ -25,8 +25,32 @@ export const workoutSets = pgTable("workout_sets", {
   isChecked: boolean("is_checked").default(false),
 });
 
+export const programTypes = pgTable("program_types", {
+  id: serial("id").primaryKey(),
+  name: varchar("name", { length: 50 }).notNull(),
+});
+
+export const programs = pgTable("programs", {
+  id: serial("id").primaryKey(),
+  name: varchar("name", { length: 100 }).notNull(),
+  programTypeId: integer("program_type_id")
+    .notNull()
+    .references(() => programTypes.id),
+});
+
+export const programExercises = pgTable("program_exercises", {
+  id: serial("id").primaryKey(),
+  programId: integer("program_id")
+    .notNull()
+    .references(() => programs.id),
+  exerciseId: integer("exercise_id")
+    .notNull()
+    .references(() => exercises.id),
+});
+
 export const exercisesRelations = relations(exercises, ({ many }) => ({
   sets: many(workoutSets),
+  programExercises: many(programExercises),
 }));
 
 export const workoutSetsRelations = relations(workoutSets, ({ one }) => ({
@@ -35,3 +59,29 @@ export const workoutSetsRelations = relations(workoutSets, ({ one }) => ({
     references: [exercises.id],
   }),
 }));
+
+export const programTypeRelations = relations(programTypes, ({ many }) => ({
+  programs: many(programs),
+}));
+
+export const programRelations = relations(programs, ({ one, many }) => ({
+  programType: one(programTypes, {
+    fields: [programs.programTypeId],
+    references: [programTypes.id],
+  }),
+  programExercises: many(programExercises),
+}));
+
+export const programExerciseRelations = relations(
+  programExercises,
+  ({ one }) => ({
+    program: one(programs, {
+      fields: [programExercises.programId],
+      references: [programs.id],
+    }),
+    exercise: one(exercises, {
+      fields: [programExercises.exerciseId],
+      references: [exercises.id],
+    }),
+  }),
+);
