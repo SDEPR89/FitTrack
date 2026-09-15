@@ -1,7 +1,8 @@
 import { db } from "@/src/db";
-import { exercises, workoutSets } from "@/src/db/schema";
+import { workoutSets } from "@/src/db/schema";
 import { NextResponse, NextRequest } from "next/server";
 import { eq } from "drizzle-orm";
+import { InferInsertModel } from "drizzle-orm";
 
 export async function GET(request: NextRequest) {
   try {
@@ -24,6 +25,50 @@ export async function GET(request: NextRequest) {
       .from(workoutSets)
       .where(eq(workoutSets.exerciseId, exerciseId));
     return NextResponse.json(result);
+  } catch (error) {
+    return NextResponse.json(
+      { error: "Failed to process request" },
+      { status: 500 },
+    );
+  }
+}
+
+export async function POST(request: Request) {
+  try {
+    let body;
+    try {
+      body = await request.json();
+    } catch {
+      return NextResponse.json(
+        { error: "Request body is missing or not valid JSON" },
+        { status: 400 },
+      );
+    }
+
+    const { setNumber, exerciseId, weightKg, reps, isChecked } = body;
+    const createData: Partial<InferInsertModel<typeof workoutSets>> = {};
+    if (setNumber !== undefined) createData.setNumber = setNumber;
+    if (weightKg !== undefined) createData.weightKg = weightKg;
+    if (reps !== undefined) createData.reps = reps;
+    if (isChecked !== undefined) createData.isChecked = isChecked;
+
+    if (!exerciseId) {
+      return NextResponse.json(
+        { error: "exerciseId is required" },
+        { status: 400 },
+      );
+    }
+    createData.exerciseId = exerciseId;
+
+    const createWorkout = await db
+      .insert(workoutSets)
+      .values(createData as InferInsertModel<typeof workoutSets>)
+      .returning();
+
+    return NextResponse.json(
+      { message: "Post created successfully", data: createWorkout },
+      { status: 201 },
+    );
   } catch (error) {
     return NextResponse.json(
       { error: "Failed to process request" },

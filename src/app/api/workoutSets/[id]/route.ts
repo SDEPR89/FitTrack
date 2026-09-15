@@ -40,7 +40,7 @@ export async function PATCH(
       .where(eq(workoutSets.id, id))
       .returning();
 
-    return NextResponse.json(updatedWorkout[0], { status: 200 });
+    return NextResponse.json(updatedWorkout[0], { status: 200 }); 
   } catch (error) {
     return NextResponse.json(
       { error: "Failed to update resource" },
