@@ -23,3 +23,49 @@ export async function GET(
     );
   }
 }
+
+export async function DELETE(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> },
+) {
+  try {
+    const idParam = (await params).id;
+    const id = Number(idParam);
+
+    const deleteExercise = await db
+      .delete(exercises)
+      .where(eq(exercises.id, id))
+      .returning();
+
+    if (deleteExercise.length === 0) {
+      return NextResponse.json(
+        { error: `Exercise ${id} not found` },
+        { status: 404 },
+      );
+    }
+
+    return NextResponse.json({ deleteExercise }, { status: 200 });
+  } catch (error) {
+    if (
+      typeof error === "object" &&
+      error !== null &&
+      "cause" in error &&
+      typeof error.cause === "object" &&
+      error.cause !== null &&
+      "code" in error.cause &&
+      error.cause.code === "23503"
+    ) {
+      return NextResponse.json(
+        {
+          error:
+            "Cannot delete this exercise because it has existing workout sets logged against it.",
+        },
+        { status: 409 },
+      );
+    }
+    return NextResponse.json(
+      { error: "Failed to delete the item" },
+      { status: 500 },
+    );
+  }
+}
