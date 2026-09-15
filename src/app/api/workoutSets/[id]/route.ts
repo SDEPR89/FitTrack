@@ -40,10 +40,39 @@ export async function PATCH(
       .where(eq(workoutSets.id, id))
       .returning();
 
-    return NextResponse.json(updatedWorkout[0], { status: 200 }); 
+    return NextResponse.json(updatedWorkout[0], { status: 200 });
   } catch (error) {
     return NextResponse.json(
       { error: "Failed to update resource" },
+      { status: 500 },
+    );
+  }
+}
+
+export async function DELETE(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> },
+) {
+  try {
+    const idParam = (await params).id;
+    const id = Number(idParam);
+
+    const deleteWorkout = await db
+      .delete(workoutSets)
+      .where(eq(workoutSets.id, id))
+      .returning();
+
+    if (deleteWorkout.length === 0) {
+      return NextResponse.json(
+        { error: `Workout ${id} not found` },
+        { status: 404 },
+      );
+    }
+
+    return NextResponse.json({ deleteWorkout }, { status: 200 });
+  } catch (error) {
+    return NextResponse.json(
+      { error: "Failed to delete the item" },
       { status: 500 },
     );
   }
