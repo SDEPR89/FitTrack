@@ -1,12 +1,12 @@
-import { NextResponse, NextRequest } from "next/server";
+import { NextResponse } from "next/server";
 import { db } from "@/src/db";
 import { workoutSets } from "@/src/db/schema";
 import { eq } from "drizzle-orm";
 import type { InferInsertModel } from "drizzle-orm";
 
 export async function GET(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> },
+  _request: Request,
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const idParam = (await params).id;
@@ -19,22 +19,22 @@ export async function GET(
     if (result.length === 0) {
       return NextResponse.json(
         { error: `Workout ${id} not found` },
-        { status: 404 },
+        { status: 404 }
       );
     }
 
     return NextResponse.json(result[0]);
-  } catch (error) {
+  } catch {
     return NextResponse.json(
-      { error: "Failed to update resource" },
-      { status: 500 },
+      { error: "Failed to fetch workout set" },
+      { status: 500 }
     );
   }
 }
 
 export async function PATCH(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> },
+  request: Request,
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const idParam = (await params).id;
@@ -46,7 +46,7 @@ export async function PATCH(
     } catch {
       return NextResponse.json(
         { error: "Request body is missing or not valid JSON" },
-        { status: 400 },
+        { status: 400 }
       );
     }
     const { setNumber, weightKg, reps, isChecked } = body;
@@ -58,7 +58,7 @@ export async function PATCH(
     if (Object.keys(updateData).length === 0) {
       return NextResponse.json(
         { error: "No fields provided to update" },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
@@ -69,17 +69,17 @@ export async function PATCH(
       .returning();
 
     return NextResponse.json(updatedWorkout[0], { status: 200 });
-  } catch (error) {
+  } catch {
     return NextResponse.json(
       { error: "Failed to update resource" },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }
 
 export async function DELETE(
-  request: Request,
-  { params }: { params: Promise<{ id: string }> },
+  _request: Request,
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const idParam = (await params).id;
@@ -93,15 +93,15 @@ export async function DELETE(
     if (deleteWorkout.length === 0) {
       return NextResponse.json(
         { error: `Workout ${id} not found` },
-        { status: 404 },
+        { status: 404 }
       );
     }
 
     return NextResponse.json({ deleteWorkout }, { status: 200 });
-  } catch (error) {
+  } catch {
     return NextResponse.json(
       { error: "Failed to delete the item" },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }

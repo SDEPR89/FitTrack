@@ -1,15 +1,15 @@
 import { db } from "@/src/db";
 import { exercises } from "@/src/db/schema";
-import { NextResponse, NextRequest } from "next/server";
+import { NextResponse } from "next/server";
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     const allExercises = await db.select().from(exercises);
     return NextResponse.json(allExercises);
-  } catch (error) {
+  } catch {
     return NextResponse.json(
-      { error: "Failed to update resource" },
-      { status: 500 },
+      { error: "Failed to fetch exercises" },
+      { status: 500 }
     );
   }
 }
@@ -22,7 +22,7 @@ export async function POST(request: Request) {
     } catch {
       return NextResponse.json(
         { error: "Request body is missing or not valid JSON" },
-        { status: 400 },
+        { status: 400 }
       );
     }
     const { name, category } = body;
@@ -30,31 +30,27 @@ export async function POST(request: Request) {
     if (!name || !category) {
       return NextResponse.json(
         { error: "name and category are required" },
-        { status: 400 },
+        { status: 400 }
       );
     }
+
     type NewExercise = typeof exercises.$inferInsert;
 
     const newExercise: NewExercise = {
-      name,
-      category,
+      name: name.trim().toUpperCase(),
+      category: category.trim().toUpperCase(),
     };
-    if (Object.keys(newExercise).length === 0) {
-      return NextResponse.json(
-        { error: "No fields provided to update" },
-        { status: 400 },
-      );
-    }
+
     const newPost = await db.insert(exercises).values(newExercise).returning();
 
     return NextResponse.json(
-      { message: "Post created successfully", data: newPost },
-      { status: 201 },
+      { message: "Exercise created successfully", data: newPost },
+      { status: 201 }
     );
-  } catch (error) {
+  } catch {
     return NextResponse.json(
       { error: "Failed to process request" },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }

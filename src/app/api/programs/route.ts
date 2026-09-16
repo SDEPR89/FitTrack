@@ -1,16 +1,26 @@
 import { db } from "@/src/db";
-import { programs } from "@/src/db/schema";
-import { NextResponse, NextRequest } from "next/server";
-import { InferInsertModel } from "drizzle-orm";
+import { programs, programTypes } from "@/src/db/schema";
+import { NextResponse } from "next/server";
+import { InferInsertModel, eq } from "drizzle-orm";
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
-    const allPrograms = await db.select().from(programs);
+    const allPrograms = await db
+      .select({
+        id: programs.id,
+        name: programs.name,
+        programTypeId: programs.programTypeId,
+        programTypeName: programTypes.name,
+      })
+      .from(programs)
+      .leftJoin(programTypes, eq(programs.programTypeId, programTypes.id));
+
     return NextResponse.json(allPrograms);
   } catch (error) {
+    console.error("Failed to fetch programs:", error);
     return NextResponse.json(
       { error: "Failed to fetch programs" },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }
@@ -23,7 +33,7 @@ export async function POST(request: Request) {
     } catch {
       return NextResponse.json(
         { error: "Request body is missing or not valid JSON" },
-        { status: 400 },
+        { status: 400 }
       );
     }
     const { name, programTypeId } = body;
@@ -33,7 +43,7 @@ export async function POST(request: Request) {
     if (!name || !programTypeId) {
       return NextResponse.json(
         { error: "name and programTypeId are required" },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
@@ -45,13 +55,14 @@ export async function POST(request: Request) {
       .returning();
 
     return NextResponse.json(
-      { message: "Post created successfully", data: createWorkout },
-      { status: 201 },
+      { message: "Program created successfully", data: createWorkout },
+      { status: 201 }
     );
   } catch (error) {
+    console.error("Failed to create program:", error);
     return NextResponse.json(
       { error: "Failed to process request" },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }

@@ -1,8 +1,7 @@
 import { db } from "@/src/db";
 import { workoutSets } from "@/src/db/schema";
 import { NextResponse, NextRequest } from "next/server";
-import { eq } from "drizzle-orm";
-import { InferInsertModel } from "drizzle-orm";
+import { eq, InferInsertModel } from "drizzle-orm";
 
 export async function GET(request: NextRequest) {
   try {
@@ -10,14 +9,14 @@ export async function GET(request: NextRequest) {
     if (exerciseIdParam === null) {
       return NextResponse.json(
         { error: "exerciseId is required" },
-        { status: 400 },
+        { status: 400 }
       );
     }
     const exerciseId = Number(exerciseIdParam);
     if (Number.isNaN(exerciseId)) {
       return NextResponse.json(
         { error: "exerciseId must be number" },
-        { status: 400 },
+        { status: 400 }
       );
     }
     const result = await db
@@ -25,10 +24,10 @@ export async function GET(request: NextRequest) {
       .from(workoutSets)
       .where(eq(workoutSets.exerciseId, exerciseId));
     return NextResponse.json(result);
-  } catch (error) {
+  } catch {
     return NextResponse.json(
       { error: "Failed to process request" },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }
@@ -41,7 +40,7 @@ export async function POST(request: Request) {
     } catch {
       return NextResponse.json(
         { error: "Request body is missing or not valid JSON" },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
@@ -49,13 +48,13 @@ export async function POST(request: Request) {
     const createData: Partial<InferInsertModel<typeof workoutSets>> = {};
     if (setNumber !== undefined) createData.setNumber = setNumber;
     if (weightKg !== undefined) createData.weightKg = weightKg;
-    if (reps !== undefined) createData.reps = reps;
+    if (reps !== undefined) updateDataReps(createData, reps);
     if (isChecked !== undefined) createData.isChecked = isChecked;
 
     if (!exerciseId) {
       return NextResponse.json(
         { error: "exerciseId is required" },
-        { status: 400 },
+        { status: 400 }
       );
     }
     createData.exerciseId = exerciseId;
@@ -66,13 +65,17 @@ export async function POST(request: Request) {
       .returning();
 
     return NextResponse.json(
-      { message: "Post created successfully", data: createWorkout },
-      { status: 201 },
+      { message: "Workout set created successfully", data: createWorkout },
+      { status: 201 }
     );
-  } catch (error) {
+  } catch {
     return NextResponse.json(
       { error: "Failed to process request" },
-      { status: 500 },
+      { status: 500 }
     );
   }
+}
+
+function updateDataReps(createData: Partial<InferInsertModel<typeof workoutSets>>, reps: number) {
+  createData.reps = reps;
 }

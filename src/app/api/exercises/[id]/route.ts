@@ -1,12 +1,11 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { db } from "@/src/db";
 import { exercises } from "@/src/db/schema";
-import { eq } from "drizzle-orm";
-import { InferInsertModel } from "drizzle-orm";
+import { eq, InferInsertModel } from "drizzle-orm";
 
 export async function GET(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> },
+  _request: Request,
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const idParam = (await params).id;
@@ -19,22 +18,22 @@ export async function GET(
     if (result.length === 0) {
       return NextResponse.json(
         { error: `Exercise ${id} not found` },
-        { status: 404 },
+        { status: 404 }
       );
     }
 
     return NextResponse.json(result[0]);
-  } catch (error) {
+  } catch {
     return NextResponse.json(
-      { error: "Failed to update resource" },
-      { status: 500 },
+      { error: "Failed to fetch exercise" },
+      { status: 500 }
     );
   }
 }
 
 export async function DELETE(
-  request: Request,
-  { params }: { params: Promise<{ id: string }> },
+  _request: Request,
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const idParam = (await params).id;
@@ -48,7 +47,7 @@ export async function DELETE(
     if (deleteExercise.length === 0) {
       return NextResponse.json(
         { error: `Exercise ${id} not found` },
-        { status: 404 },
+        { status: 404 }
       );
     }
 
@@ -68,19 +67,19 @@ export async function DELETE(
           error:
             "Cannot delete this exercise because it has existing workout sets logged against it.",
         },
-        { status: 409 },
+        { status: 409 }
       );
     }
     return NextResponse.json(
       { error: "Failed to delete the item" },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }
 
 export async function PATCH(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> },
+  request: Request,
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const idParam = (await params).id;
@@ -92,18 +91,18 @@ export async function PATCH(
     } catch {
       return NextResponse.json(
         { error: "Request body is missing or not valid JSON" },
-        { status: 400 },
+        { status: 400 }
       );
     }
     const { name, category } = body;
     const updateData: Partial<InferInsertModel<typeof exercises>> = {};
-    if (name !== undefined) updateData.name = name;
-    if (category !== undefined) updateData.category = category;
+    if (name !== undefined) updateData.name = name.trim().toUpperCase();
+    if (category !== undefined) updateData.category = category.trim().toUpperCase();
 
     if (Object.keys(updateData).length === 0) {
       return NextResponse.json(
         { error: "No fields provided to update" },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
@@ -114,10 +113,10 @@ export async function PATCH(
       .returning();
 
     return NextResponse.json(updateExercise[0], { status: 200 });
-  } catch (error) {
+  } catch {
     return NextResponse.json(
       { error: "Failed to update resource" },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }
