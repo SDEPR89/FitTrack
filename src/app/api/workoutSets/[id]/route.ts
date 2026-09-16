@@ -4,6 +4,34 @@ import { workoutSets } from "@/src/db/schema";
 import { eq } from "drizzle-orm";
 import type { InferInsertModel } from "drizzle-orm";
 
+export async function GET(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> },
+) {
+  try {
+    const idParam = (await params).id;
+    const id = Number(idParam);
+    const result = await db
+      .select()
+      .from(workoutSets)
+      .where(eq(workoutSets.id, id));
+
+    if (result.length === 0) {
+      return NextResponse.json(
+        { error: `Workout ${id} not found` },
+        { status: 404 },
+      );
+    }
+
+    return NextResponse.json(result[0]);
+  } catch (error) {
+    return NextResponse.json(
+      { error: "Failed to update resource" },
+      { status: 500 },
+    );
+  }
+}
+
 export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> },

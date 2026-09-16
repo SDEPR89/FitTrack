@@ -15,6 +15,13 @@ export async function GET(
       .from(exercises)
       .where(eq(exercises.id, id));
 
+    if (result.length === 0) {
+      return NextResponse.json(
+        { error: `Exercise ${id} not found` },
+        { status: 404 },
+      );
+    }
+
     return NextResponse.json(result[0]);
   } catch (error) {
     return NextResponse.json(
@@ -46,7 +53,6 @@ export async function DELETE(
 
     return NextResponse.json({ deleteExercise }, { status: 200 });
   } catch (error) {
-
     if (
       typeof error === "object" &&
       error !== null &&
