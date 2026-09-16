@@ -46,3 +46,33 @@ export async function GET(
     );
   }
 }
+
+export async function DELETE(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> },
+) {
+  try {
+    const idParam = (await params).id;
+    const id = Number(idParam);
+
+    const deleteProgram = await db
+      .delete(programs)
+      .where(eq(programs.id, id))
+      .returning();
+
+    if (deleteProgram.length === 0) {
+      return NextResponse.json(
+        { error: `Program ${id} not found` },
+        { status: 404 },
+      );
+    }
+
+    return NextResponse.json({ deleteProgram }, { status: 200 });
+  } catch (error) {
+    console.error(error);
+    return NextResponse.json(
+      { error: "Failed to delete the item" },
+      { status: 500 },
+    );
+  }
+}

@@ -42,7 +42,7 @@ export const programExercises = pgTable("program_exercises", {
   id: serial("id").primaryKey(),
   programId: integer("program_id")
     .notNull()
-    .references(() => programs.id),
+    .references(() => programs.id, { onDelete: "cascade" }),
   exerciseId: integer("exercise_id")
     .notNull()
     .references(() => exercises.id),
