@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/src/db";
 import { exercises } from "@/src/db/schema";
 import { eq } from "drizzle-orm";
+import { InferInsertModel } from "drizzle-orm";
 
 export async function GET(
   request: NextRequest,
@@ -72,6 +73,50 @@ export async function DELETE(
     }
     return NextResponse.json(
       { error: "Failed to delete the item" },
+      { status: 500 },
+    );
+  }
+}
+
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> },
+) {
+  try {
+    const idParam = (await params).id;
+    const id = Number(idParam);
+
+    let body;
+    try {
+      body = await request.json();
+    } catch {
+      return NextResponse.json(
+        { error: "Request body is missing or not valid JSON" },
+        { status: 400 },
+      );
+    }
+    const { name, category } = body;
+    const updateData: Partial<InferInsertModel<typeof exercises>> = {};
+    if (name !== undefined) updateData.name = name;
+    if (category !== undefined) updateData.category = category;
+
+    if (Object.keys(updateData).length === 0) {
+      return NextResponse.json(
+        { error: "No fields provided to update" },
+        { status: 400 },
+      );
+    }
+
+    const updateExercise = await db
+      .update(exercises)
+      .set(updateData)
+      .where(eq(exercises.id, id))
+      .returning();
+
+    return NextResponse.json(updateExercise[0], { status: 200 });
+  } catch (error) {
+    return NextResponse.json(
+      { error: "Failed to update resource" },
       { status: 500 },
     );
   }
