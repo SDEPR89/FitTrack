@@ -44,20 +44,22 @@ export const Header: React.FC<HeaderProps> = ({ title = "FitTrack" }) => {
 
   return (
     <>
-      <header className="fixed top-0 w-full z-40 pt-safe bg-[var(--custom-a0)]/70 backdrop-blur-xl border-b border-white/10 shadow-md">
-        <div className="h-14 px-gutter flex items-center justify-between max-w-[840px] mx-auto">
-          <Link href="/" className="flex items-center gap-2.5 group">
-            <div className="w-8 h-8 rounded-xl bg-[var(--custom-a40)] text-[var(--custom-a0)] flex items-center justify-center shadow-xs group-hover:opacity-95 transition-opacity">
-              <span className="material-symbols-outlined text-[18px]">
+      <header className="fixed top-0 w-full z-40 pt-safe bg-[var(--custom-a0)]/80 backdrop-blur-xl border-b border-white/10 shadow-md">
+        <div className="h-16 px-4 flex items-center justify-between max-w-[840px] mx-auto">
+          <Link href="/" className="flex items-center gap-3 group">
+            <div className="w-10 h-10 rounded-2xl bg-[var(--custom-a40)] text-[var(--custom-a0)] flex items-center justify-center shadow-sm group-hover:opacity-90 transition-opacity shrink-0">
+              <span className="material-symbols-outlined text-[22px]">
                 fitness_center
               </span>
             </div>
             <div className="flex items-baseline gap-1.5">
-              <span className="font-bold text-[var(--custom-a30)] text-base tracking-tight">
+              <span className="font-bold text-[var(--custom-a30)] text-lg tracking-tight">
                 FitTrack
               </span>
-              <span className="text-[var(--custom-a20)]/60 text-xs font-normal">/</span>
-              <span className="text-[var(--custom-a20)] text-xs font-medium">
+              <span className="text-[var(--custom-a20)]/50 text-sm font-normal hidden sm:inline">
+                /
+              </span>
+              <span className="text-[var(--custom-a20)] text-xs font-medium hidden sm:inline">
                 {title}
               </span>
             </div>
@@ -67,12 +69,12 @@ export const Header: React.FC<HeaderProps> = ({ title = "FitTrack" }) => {
           <button
             onClick={() => setShowModal(true)}
             title="Your workspace code — click to manage"
-            className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[var(--custom-a10)]/40 border border-white/10 hover:bg-[var(--custom-a10)]/60 transition-colors"
+            className="flex items-center gap-2 px-3 py-2 rounded-2xl bg-[var(--custom-a10)]/50 border border-white/10 hover:bg-[var(--custom-a10)]/70 transition-colors"
           >
-            <span className="material-symbols-outlined text-[14px] text-[var(--custom-a20)]">
+            <span className="material-symbols-outlined text-[16px] text-[var(--custom-a20)]">
               key
             </span>
-            <span className="text-[10px] font-mono font-semibold text-[var(--custom-a30)] tracking-widest">
+            <span className="text-[11px] font-mono font-semibold text-[var(--custom-a30)] tracking-widest">
               {isLoading ? "···" : (code ?? "···")}
             </span>
           </button>
@@ -86,7 +88,7 @@ export const Header: React.FC<HeaderProps> = ({ title = "FitTrack" }) => {
           onClick={() => setShowModal(false)}
         >
           <div
-            className="bg-[var(--custom-a0)] border border-white/10 rounded-2xl p-6 w-full max-w-xs shadow-2xl"
+            className="bg-[var(--custom-a0)] border border-white/10 rounded-3xl p-6 w-full max-w-xs shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
             <h2 className="text-base font-bold text-[var(--custom-a30)] mb-1">
@@ -98,7 +100,7 @@ export const Header: React.FC<HeaderProps> = ({ title = "FitTrack" }) => {
             </p>
 
             {/* Current code */}
-            <div className="flex items-center gap-2 bg-[var(--custom-a10)]/40 rounded-xl px-3 py-2 mb-1">
+            <div className="flex items-center gap-2 bg-[var(--custom-a10)]/40 rounded-2xl px-3 py-2 mb-1">
               <span className="font-mono text-xl font-bold tracking-[0.2em] text-[var(--custom-a30)] flex-1">
                 {code ?? "···"}
               </span>
@@ -115,7 +117,7 @@ export const Header: React.FC<HeaderProps> = ({ title = "FitTrack" }) => {
 
             {/* Switch workspace */}
             <p className="text-xs text-[var(--custom-a20)]/60 mb-2 font-medium">
-              Enter a friend's code to switch workspace:
+              Enter a friend`&apos;`s code to switch workspace:
             </p>
             <input
               type="text"
@@ -123,22 +125,26 @@ export const Header: React.FC<HeaderProps> = ({ title = "FitTrack" }) => {
               onChange={(e) => setInputCode(e.target.value.toUpperCase())}
               placeholder="e.g. ABCD1234"
               maxLength={12}
-              className="w-full bg-[var(--custom-a10)]/40 border border-white/10 rounded-xl px-3 py-2 text-sm font-mono text-[var(--custom-a30)] placeholder:text-[var(--custom-a20)]/40 focus:outline-none focus:border-[var(--custom-a30)]/40 mb-2"
+              className="w-full bg-[var(--custom-a10)]/40 border border-white/10 rounded-2xl px-3 py-2 text-sm font-mono text-[var(--custom-a30)] placeholder:text-[var(--custom-a20)]/40 focus:outline-none focus:border-[var(--custom-a30)]/40 mb-2"
             />
             {switchError && (
               <p className="text-xs text-red-400 mb-2">{switchError}</p>
             )}
             <div className="flex gap-2 mb-3">
               <button
-                onClick={() => { setShowModal(false); setSwitchError(""); setInputCode(""); }}
-                className="flex-1 py-2 rounded-xl text-sm text-[var(--custom-a20)] bg-[var(--custom-a10)]/30 hover:bg-[var(--custom-a10)]/50 transition-colors"
+                onClick={() => {
+                  setShowModal(false);
+                  setSwitchError("");
+                  setInputCode("");
+                }}
+                className="flex-1 py-2 rounded-2xl text-sm text-[var(--custom-a20)] bg-[var(--custom-a10)]/30 hover:bg-[var(--custom-a10)]/50 transition-colors"
               >
                 Cancel
               </button>
               <button
                 onClick={handleSwitch}
                 disabled={switching || !inputCode.trim()}
-                className="flex-1 py-2 rounded-xl text-sm font-semibold text-[var(--custom-a0)] bg-[var(--custom-a40)] hover:opacity-90 transition-opacity disabled:opacity-40"
+                className="flex-1 py-2 rounded-2xl text-sm font-semibold text-[var(--custom-a0)] bg-[var(--custom-a40)] hover:opacity-90 transition-opacity disabled:opacity-40"
               >
                 {switching ? "Switching…" : "Switch"}
               </button>
@@ -160,7 +166,10 @@ export const Header: React.FC<HeaderProps> = ({ title = "FitTrack" }) => {
                     });
                     if (res.ok) {
                       const data = await res.json();
-                      localStorage.setItem("fittrack_workspace", JSON.stringify(data));
+                      localStorage.setItem(
+                        "fittrack_workspace",
+                        JSON.stringify(data),
+                      );
                       setShowModal(false);
                       window.location.reload();
                     }
@@ -171,9 +180,11 @@ export const Header: React.FC<HeaderProps> = ({ title = "FitTrack" }) => {
                   }
                 }}
                 disabled={switching}
-                className="w-full py-2 rounded-xl text-xs font-medium text-[var(--custom-a20)] bg-[var(--custom-a10)]/30 hover:bg-[var(--custom-a10)]/50 transition-colors flex items-center justify-center gap-1.5 disabled:opacity-40"
+                className="w-full py-2 rounded-2xl text-xs font-medium text-[var(--custom-a20)] bg-[var(--custom-a10)]/30 hover:bg-[var(--custom-a10)]/50 transition-colors flex items-center justify-center gap-1.5 disabled:opacity-40"
               >
-                <span className="material-symbols-outlined text-[14px]">add_circle</span>
+                <span className="material-symbols-outlined text-[14px]">
+                  add_circle
+                </span>
                 Generate my own new workspace
               </button>
             </div>

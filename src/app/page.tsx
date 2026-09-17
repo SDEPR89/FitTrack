@@ -140,7 +140,7 @@ export default function WeeklySchedulePage() {
   return (
     <>
       <Header title="Schedule" />
-      <main className="flex flex-col relative w-full pt-16 pb-24 bg-transparent min-h-screen text-[var(--custom-a30)]">
+      <main className="flex flex-col relative w-full pt-20 pb-24 bg-transparent min-h-screen text-[var(--custom-a30)]">
         <div className="flex flex-col w-full max-w-[840px] mx-auto px-4 py-4 gap-6">
           {/* Header Section */}
           <div className="flex items-center justify-between">
@@ -154,7 +154,7 @@ export default function WeeklySchedulePage() {
             </div>
 
             {/* Active Frequency Pill */}
-            <div className="hidden sm:flex flex-col items-end px-3 py-1.5 rounded-xl glass-panel">
+            <div className="hidden sm:flex flex-col items-end px-3 py-1.5 rounded-2xl glass-panel">
               <span className="text-[10px] font-semibold uppercase text-[var(--custom-a20)]">
                 Routine Frequency
               </span>
@@ -184,7 +184,7 @@ export default function WeeklySchedulePage() {
                 return (
                   <div
                     key={dayItem.day}
-                    className={`w-full rounded-2xl p-4 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${
+                    className={`w-full rounded-3xl p-4 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${
                       dayItem.isToday
                         ? "glass-panel border-l-4 border-l-[var(--custom-a40)] shadow-md"
                         : hasProgram
@@ -197,7 +197,7 @@ export default function WeeklySchedulePage() {
                       onClick={() => openPicker(dayItem.day, dayItem.program)}
                     >
                       <div
-                        className={`w-11 h-11 rounded-xl flex items-center justify-center font-bold text-xs ${
+                        className={`w-11 h-11 rounded-2xl flex items-center justify-center font-bold text-xs ${
                           dayItem.isToday
                             ? "bg-[var(--custom-a40)] text-[var(--custom-a0)] shadow-sm"
                             : hasProgram
@@ -231,36 +231,37 @@ export default function WeeklySchedulePage() {
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-2 self-stretch sm:self-auto justify-between sm:justify-end">
+                    <div className="flex items-center gap-2 w-full sm:w-auto sm:justify-end">
                       {hasProgram ? (
                         <>
                           <Link
                             href={programUrl}
-                            className="h-10 px-3.5 rounded-xl neu-outset text-[var(--custom-a40)] font-semibold text-xs transition-all flex items-center gap-1.5 cursor-pointer hover:bg-[var(--custom-a40)]/15"
+                            className="flex-1 sm:flex-none h-11 px-4 rounded-2xl neu-outset text-[var(--custom-a40)] font-bold text-[11px] tracking-widest uppercase transition-all flex items-center gap-2 cursor-pointer hover:bg-[var(--custom-a40)]/15 min-w-0"
                           >
-                            <span>{dayItem.program}</span>
-                            <span className="material-symbols-outlined text-[16px]">
+                            <span className="truncate">{dayItem.program}</span>
+                            <span className="material-symbols-outlined text-[16px] shrink-0">
                               arrow_forward
                             </span>
                           </Link>
                           <button
                             type="button"
                             aria-label={`Change ${dayItem.day} Program`}
-                            className="w-10 h-10 rounded-xl neu-outset text-[var(--custom-a20)] hover:text-white transition-all flex items-center justify-center cursor-pointer"
+                            className="shrink-0 h-11 px-3 rounded-2xl neu-outset text-[var(--custom-a20)] hover:text-white transition-all flex items-center gap-1.5 cursor-pointer"
                             onClick={() => openPicker(dayItem.day, dayItem.program)}
                           >
                             <span className="material-symbols-outlined text-[18px]">
                               swap_horiz
                             </span>
+                            <span className="text-[11px] font-semibold hidden xs:inline sm:inline">Change</span>
                           </button>
                         </>
                       ) : (
                         <button
                           type="button"
-                          className="h-10 w-full sm:w-auto px-4 rounded-xl neu-outset text-[var(--custom-a30)] text-xs font-semibold transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                          className="h-11 w-full sm:w-auto px-5 rounded-2xl neu-outset text-[var(--custom-a30)] text-xs font-semibold transition-all flex items-center justify-center gap-2 cursor-pointer"
                           onClick={() => openPicker(dayItem.day, dayItem.program)}
                         >
-                          <span className="material-symbols-outlined text-[var(--custom-a40)] text-[16px]">
+                          <span className="material-symbols-outlined text-[var(--custom-a40)] text-[18px]">
                             add_circle
                           </span>
                           <span>Assign Routine</span>

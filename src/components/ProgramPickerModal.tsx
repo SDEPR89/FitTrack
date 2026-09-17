@@ -80,14 +80,14 @@ export const ProgramPickerModal: React.FC<ProgramPickerModalProps> = ({
             type="button"
             onClick={onClose}
             aria-label="Close modal"
-            className="w-9 h-9 rounded-xl neu-outset flex items-center justify-center text-[var(--custom-a20)] hover:text-white cursor-pointer"
+            className="w-9 h-9 rounded-2xl neu-outset flex items-center justify-center text-[var(--custom-a20)] hover:text-white cursor-pointer"
           >
             <span className="material-symbols-outlined text-[18px]">close</span>
           </button>
         </div>
 
         {errorMsg && (
-          <div className="mb-3 p-3 rounded-xl bg-rose-950/80 text-rose-200 text-xs border border-rose-800">
+          <div className="mb-3 p-3 rounded-2xl bg-rose-950/80 text-rose-200 text-xs border border-rose-800">
             {errorMsg}
           </div>
         )}

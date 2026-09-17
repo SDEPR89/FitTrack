@@ -224,7 +224,7 @@ export default function ExercisesPage() {
   return (
     <>
       <Header title="Exercise Library" />
-      <main className="flex flex-col relative w-full pt-16 pb-24 bg-transparent min-h-screen text-[var(--custom-a30)]">
+      <main className="flex flex-col relative w-full pt-20 pb-24 bg-transparent min-h-screen text-[var(--custom-a30)]">
         <div className="flex flex-col w-full max-w-[840px] mx-auto px-4 py-4 gap-6">
           {/* Deletion Constraint / Error Notification Toast */}
           {toastMsg && (

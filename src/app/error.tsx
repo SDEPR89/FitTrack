@@ -18,7 +18,7 @@ export default function ErrorPage({ error, reset }: ErrorProps) {
   return (
     <>
       <Header title="Error" />
-      <main className="flex flex-col items-center justify-center relative w-full pt-16 pb-24 bg-transparent min-h-screen text-[var(--custom-a30)] px-4">
+      <main className="flex flex-col items-center justify-center relative w-full pt-20 pb-24 bg-transparent min-h-screen text-[var(--custom-a30)] px-4">
         <div className="flex flex-col items-center justify-center w-full max-w-[520px] p-8 rounded-3xl glass-panel text-center gap-6 shadow-xl">
           {/* Badge & Icon */}
           <div className="flex flex-col items-center gap-3">
