@@ -14,6 +14,7 @@ export const workspaces = pgTable("workspaces", {
   id: serial("id").primaryKey(),
   code: varchar("code", { length: 12 }).notNull().unique(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
+  schedule: text("schedule"),
 });
 
 export const exercises = pgTable("exercises", {

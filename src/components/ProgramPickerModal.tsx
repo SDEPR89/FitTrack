@@ -14,6 +14,7 @@ interface ProgramPickerModalProps {
   currentProgram?: string;
   onClose: () => void;
   onSelectProgram: (day: string, program: string, programId?: number) => void;
+  workspaceHeaders?: Record<string, string>;
 }
 
 export const ProgramPickerModal: React.FC<ProgramPickerModalProps> = ({
@@ -22,6 +23,7 @@ export const ProgramPickerModal: React.FC<ProgramPickerModalProps> = ({
   currentProgram,
   onClose,
   onSelectProgram,
+  workspaceHeaders = {},
 }) => {
   const [programs, setPrograms] = useState<ProgramItem[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
@@ -33,7 +35,7 @@ export const ProgramPickerModal: React.FC<ProgramPickerModalProps> = ({
       try {
         setLoading(true);
         setErrorMsg("");
-        const res = await fetch("/api/programs");
+        const res = await fetch("/api/programs", { headers: workspaceHeaders });
         if (res.ok) {
           const data = await res.json();
           if (Array.isArray(data)) {
@@ -93,7 +95,7 @@ export const ProgramPickerModal: React.FC<ProgramPickerModalProps> = ({
         <div className="flex flex-col gap-2 max-h-[320px] overflow-y-auto pr-1 no-scrollbar">
           {loading ? (
             <div className="flex items-center justify-center gap-2 py-8 text-[var(--custom-a20)] text-xs font-medium">
-              <span className="w-4 h-4 rounded-full border-2 border-current border-t-transparent animate-spin"></span>
+              <span className="w-4 h-4 rounded-full border-2 border-current border-t-transparent animate-spin" />
               <span>Loading routines...</span>
             </div>
           ) : programs.length > 0 ? (
@@ -121,7 +123,7 @@ export const ProgramPickerModal: React.FC<ProgramPickerModalProps> = ({
             })
           ) : (
             <div className="text-center py-6 text-[var(--custom-a20)] text-xs">
-              No routines found in database.
+              No routines found. Create a program first in the Programs tab.
             </div>
           )}
 
