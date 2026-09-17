@@ -20,7 +20,8 @@ interface ProgramTypeItem {
 }
 
 export default function ProgramLibraryPage() {
-  const { id: workspaceId, isLoading: wsLoading } = useWorkspace();
+  const { id: workspaceId, isLoading: wsLoading, switchWorkspace } = useWorkspace();
+  const [recovering, setRecovering] = useState<boolean>(false);
   const [programs, setPrograms] = useState<ProgramItem[]>([]);
   const [programTypes, setProgramTypes] = useState<ProgramTypeItem[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
@@ -239,16 +240,60 @@ export default function ProgramLibraryPage() {
               ))}
             </section>
           ) : (
-            <div className="flex flex-col items-center justify-center py-12 text-center rounded-2xl glass-panel border border-white/10">
-              <span className="material-symbols-outlined text-[28px] text-[var(--custom-a20)] mb-1">
-                fitness_center
-              </span>
-              <span className="text-sm font-bold text-[var(--custom-a30)]">
-                No Programs Available
-              </span>
-              <p className="text-xs text-[var(--custom-a20)] mt-1">
-                No routines found in database.
-              </p>
+            <div className="flex flex-col gap-3">
+              {/* Recovery banner for existing data */}
+              <div className="flex flex-col gap-3 p-4 rounded-2xl border border-[var(--custom-a40)]/30 bg-[var(--custom-a40)]/10">
+                <div className="flex items-start gap-3">
+                  <span className="material-symbols-outlined text-[var(--custom-a40)] text-[22px] mt-0.5 shrink-0">
+                    restore
+                  </span>
+                  <div className="flex flex-col gap-1">
+                    <span className="text-sm font-bold text-[var(--custom-a30)]">
+                      No programs in this workspace
+                    </span>
+                    <p className="text-xs text-[var(--custom-a20)] leading-relaxed">
+                      If you had programs before, they are stored in the default workspace.
+                      Click below to restore them.
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  disabled={recovering}
+                  onClick={async () => {
+                    setRecovering(true);
+                    const ok = await switchWorkspace("DEFAULT001");
+                    if (ok) {
+                      window.location.reload();
+                    } else {
+                      setRecovering(false);
+                    }
+                  }}
+                  className="w-full h-10 rounded-xl bg-[var(--custom-a40)] text-[var(--custom-a0)] text-xs font-bold flex items-center justify-center gap-2 disabled:opacity-50 transition-opacity"
+                >
+                  {recovering ? (
+                    <>
+                      <span className="w-3.5 h-3.5 rounded-full border-2 border-current border-t-transparent animate-spin" />
+                      <span>Restoring…</span>
+                    </>
+                  ) : (
+                    <>
+                      <span className="material-symbols-outlined text-[16px]">restore</span>
+                      <span>Restore existing programs</span>
+                    </>
+                  )}
+                </button>
+              </div>
+
+              {/* Still empty hint */}
+              <div className="flex flex-col items-center justify-center py-8 text-center rounded-2xl glass-panel border border-white/10">
+                <span className="material-symbols-outlined text-[28px] text-[var(--custom-a20)] mb-1">
+                  fitness_center
+                </span>
+                <span className="text-sm font-bold text-[var(--custom-a30)]">
+                  Or create a new program below
+                </span>
+              </div>
             </div>
           )}
 
