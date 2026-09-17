@@ -97,7 +97,13 @@ export async function PATCH(
     const { name, category } = body;
     const updateData: Partial<InferInsertModel<typeof exercises>> = {};
     if (name !== undefined) updateData.name = name.trim().toUpperCase();
-    if (category !== undefined) updateData.category = category.trim().toUpperCase();
+    if (category !== undefined) {
+      if (Array.isArray(category)) {
+        updateData.category = category.map((c) => String(c).trim().toUpperCase()).filter(Boolean);
+      } else if (typeof category === "string") {
+        updateData.category = category.split(",").map((c) => String(c).trim().toUpperCase()).filter(Boolean);
+      }
+    }
 
     if (Object.keys(updateData).length === 0) {
       return NextResponse.json(

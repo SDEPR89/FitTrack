@@ -8,39 +8,43 @@ import { Toast } from "../../components/Toast";
 interface ExerciseItem {
   id: string | number;
   name: string;
-  category: string;
+  category: string[] | string;
   logsCount?: number;
 }
 
-const DEFAULT_CATEGORIES = [
-  "Chest",
-  "Back",
-  "Shoulders",
-  "Legs",
-  "Hamstrings",
-  "Arms",
-  "Abs",
-];
+type CategoryInput = string[] | string | unknown;
 
-function normalizeCategoryName(cat: string): string {
+function getExerciseCategories(cat: CategoryInput): string[] {
+  if (!cat) return [];
+  if (Array.isArray(cat)) {
+    return cat.map((c) => String(c ?? "").trim().toUpperCase()).filter(Boolean);
+  }
+  if (typeof cat === "string") {
+    return cat.split(",").map((c) => String(c).trim().toUpperCase()).filter(Boolean);
+  }
+  return [];
+}
+
+function normalizeCategoryName(cat: CategoryInput): string {
   if (!cat) return "";
-  return cat.trim().toUpperCase();
+  return String(cat).trim().toUpperCase();
 }
 
 function matchCategory(
-  exerciseCat: string = "",
-  selectedCat: string = "",
+  exerciseCat: CategoryInput,
+  selectedCat: CategoryInput = "",
 ): boolean {
-  if (!selectedCat || selectedCat.toLowerCase() === "all") return true;
-
-  const ex = exerciseCat.trim().toLowerCase();
-  const sel = selectedCat.trim().toLowerCase();
-
-  if (ex === sel) return true;
-  if (ex + "s" === sel || sel + "s" === ex) return true;
-  if (ex.replace(/s$/, "") === sel.replace(/s$/, "")) return true;
-
-  return false;
+  const selCatStr = String(selectedCat || "");
+  if (!selCatStr || selCatStr.toLowerCase() === "all") return true;
+  const cats = getExerciseCategories(exerciseCat);
+  const sel = selCatStr.trim().toLowerCase();
+  return cats.some((c) => {
+    const ex = String(c).trim().toLowerCase();
+    if (ex === sel) return true;
+    if (ex + "s" === sel || sel + "s" === ex) return true;
+    if (ex.replace(/s$/, "") === sel.replace(/s$/, "")) return true;
+    return false;
+  });
 }
 
 export default function ExercisesPage() {
@@ -64,13 +68,14 @@ export default function ExercisesPage() {
     const list: string[] = [];
 
     exercises.forEach((ex) => {
-      if (ex.category) {
-        const normalized = normalizeCategoryName(ex.category);
+      const cats = getExerciseCategories(ex.category);
+      cats.forEach((cat) => {
+        const normalized = normalizeCategoryName(cat);
         const exists = list.some((item) => matchCategory(item, normalized));
         if (!exists) {
           list.push(normalized);
         }
-      }
+      });
     });
 
     return list;
@@ -147,7 +152,10 @@ export default function ExercisesPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name: newName.trim().toUpperCase(),
-          category: newCategory.trim().toUpperCase(),
+          category: newCategory
+            .split(",")
+            .map((c) => c.trim().toUpperCase())
+            .filter(Boolean),
         }),
       });
 
@@ -317,13 +325,21 @@ export default function ExercisesPage() {
                     <span className="text-sm font-bold text-[var(--custom-a30)] truncate">
                       {exercise.name}
                     </span>
-                    <div className="flex items-center gap-1.5 mt-1">
-                      {/* UPPERCASE CATEGORY BADGE */}
-                      <span className="font-mono text-[10px] font-bold text-[var(--custom-a40)] bg-[var(--custom-a40)]/15 px-2 py-0.5 rounded-full border border-[var(--custom-a40)]/30">
-                        {exercise.category
-                          ? exercise.category.toUpperCase()
-                          : "GENERAL"}
-                      </span>
+                    <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+                      {getExerciseCategories(exercise.category).length > 0 ? (
+                        getExerciseCategories(exercise.category).map((cat, idx) => (
+                          <span
+                            key={idx}
+                            className="font-mono text-[10px] font-bold text-[var(--custom-a40)] bg-[var(--custom-a40)]/15 px-2 py-0.5 rounded-full border border-[var(--custom-a40)]/30"
+                          >
+                            {cat.toUpperCase()}
+                          </span>
+                        ))
+                      ) : (
+                        <span className="font-mono text-[10px] font-bold text-[var(--custom-a40)] bg-[var(--custom-a40)]/15 px-2 py-0.5 rounded-full border border-[var(--custom-a40)]/30">
+                          GENERAL
+                        </span>
+                      )}
                     </div>
                   </div>
 
@@ -404,13 +420,13 @@ export default function ExercisesPage() {
                   htmlFor="exercise-category-input"
                   className="text-xs font-semibold text-[var(--custom-a20)]"
                 >
-                  Target Muscle Group
+                  Target Muscle Groups (comma-separated for multiple)
                 </label>
                 <input
                   id="exercise-category-input"
                   type="text"
                   required
-                  placeholder="e.g. CHEST, LEGS, ARMS"
+                  placeholder="e.g. CHEST, ANTERIOR DELTOID, TRICEPS"
                   value={newCategory}
                   onChange={(e) => setNewCategory(e.target.value.toUpperCase())}
                   className="w-full h-11 px-3.5 rounded-2xl neu-inset text-sm font-mono font-bold uppercase text-[var(--custom-a30)] placeholder:text-[var(--custom-a20)]/50 placeholder:font-sans placeholder:font-normal focus:outline-none focus:border-[var(--custom-a40)]/60 transition-all"

@@ -15,10 +15,17 @@ interface SetData {
   isChecked: boolean;
 }
 
+function formatMuscleCategory(cat: string[] | string | undefined | null): string {
+  if (!cat) return "GENERAL";
+  if (Array.isArray(cat)) return cat.join(", ").toUpperCase();
+  if (typeof cat === "string") return cat.toUpperCase();
+  return "GENERAL";
+}
+
 interface ExerciseData {
   id: number;
   name: string;
-  category: string;
+  category: string[] | string;
   sets: SetData[];
   addingSet?: boolean;
 }
@@ -46,7 +53,7 @@ export default function ProgramDetailPage({
   // Add Exercise Modal state
   const [isAddModalOpen, setIsAddModalOpen] = useState<boolean>(false);
   const [availableExercises, setAvailableExercises] = useState<
-    Array<{ id: number; name: string; category: string }>
+    Array<{ id: number; name: string; category: string[] | string }>
   >([]);
   const [loadingAvailable, setLoadingAvailable] = useState<boolean>(false);
   const [addingExerciseId, setAddingExerciseId] = useState<number | null>(null);
@@ -554,9 +561,7 @@ export default function ProgramDetailPage({
                       </h2>
                       {/* UPPERCASE CATEGORY BADGE */}
                       <span className="font-mono text-[10px] font-bold text-[var(--custom-a40)] bg-[var(--custom-a40)]/20 px-2.5 py-0.5 rounded-full border border-[var(--custom-a40)]/40 shrink-0">
-                        {exercise.category
-                          ? exercise.category.toUpperCase()
-                          : "GENERAL"}
+                        {formatMuscleCategory(exercise.category)}
                       </span>
                     </div>
 
@@ -777,9 +782,7 @@ export default function ProgramDetailPage({
                             {ex.name}
                           </span>
                           <span className="font-mono text-[10px] font-bold text-[var(--custom-a40)] mt-0.5">
-                            {ex.category
-                              ? ex.category.toUpperCase()
-                              : "GENERAL"}
+                            {formatMuscleCategory(ex.category)}
                           </span>
                         </div>
                         <button

@@ -34,11 +34,28 @@ export async function POST(request: Request) {
       );
     }
 
+    let categoriesArray: string[] = [];
+    if (Array.isArray(category)) {
+      categoriesArray = category.map((c) => String(c).trim().toUpperCase()).filter(Boolean);
+    } else if (typeof category === "string") {
+      categoriesArray = category
+        .split(",")
+        .map((c) => String(c).trim().toUpperCase())
+        .filter(Boolean);
+    }
+
+    if (categoriesArray.length === 0) {
+      return NextResponse.json(
+        { error: "At least one muscle category is required" },
+        { status: 400 }
+      );
+    }
+
     type NewExercise = typeof exercises.$inferInsert;
 
     const newExercise: NewExercise = {
       name: name.trim().toUpperCase(),
-      category: category.trim().toUpperCase(),
+      category: categoriesArray,
     };
 
     const newPost = await db.insert(exercises).values(newExercise).returning();

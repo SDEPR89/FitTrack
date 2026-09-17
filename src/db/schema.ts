@@ -6,12 +6,13 @@ import {
   numeric,
   varchar,
   boolean,
+  text,
 } from "drizzle-orm/pg-core";
 
 export const exercises = pgTable("exercises", {
   id: serial("id").primaryKey(),
   name: varchar("name", { length: 100 }).notNull(),
-  category: varchar("category", { length: 50 }).notNull(),
+  category: text("category").array().notNull(),
 });
 
 export const workoutSets = pgTable("workout_sets", {
