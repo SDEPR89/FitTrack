@@ -1,19 +1,36 @@
 import { db } from "@/src/db";
-import { programs, programTypes } from "@/src/db/schema";
+import { programs, programTypes, workspaces } from "@/src/db/schema";
 import { NextResponse } from "next/server";
-import { InferInsertModel, eq } from "drizzle-orm";
+import type { NextRequest } from "next/server";
+import { InferInsertModel, eq, and } from "drizzle-orm";
 
-export async function GET() {
+export const dynamic = "force-dynamic";
+
+function getWorkspaceId(request: NextRequest): number | null {
+  const header = request.headers.get("x-workspace-id");
+  if (!header) return null;
+  const id = Number(header);
+  return Number.isNaN(id) ? null : id;
+}
+
+export async function GET(request: NextRequest) {
   try {
-    const allPrograms = await db
+    const workspaceId = getWorkspaceId(request);
+
+    const query = db
       .select({
         id: programs.id,
         name: programs.name,
         programTypeId: programs.programTypeId,
         programTypeName: programTypes.name,
+        workspaceId: programs.workspaceId,
       })
       .from(programs)
       .leftJoin(programTypes, eq(programs.programTypeId, programTypes.id));
+
+    const allPrograms = workspaceId !== null
+      ? await query.where(eq(programs.workspaceId, workspaceId))
+      : await query;
 
     return NextResponse.json(allPrograms);
   } catch (error) {
@@ -25,7 +42,7 @@ export async function GET() {
   }
 }
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
     let body;
     try {
@@ -36,9 +53,8 @@ export async function POST(request: Request) {
         { status: 400 }
       );
     }
+
     const { name, programTypeId } = body;
-    const createData: Partial<InferInsertModel<typeof programs>> = {};
-    if (name !== undefined) createData.name = name;
 
     if (!name || !programTypeId) {
       return NextResponse.json(
@@ -47,11 +63,31 @@ export async function POST(request: Request) {
       );
     }
 
-    createData.programTypeId = programTypeId;
+    const workspaceId = getWorkspaceId(request);
+
+    // If a workspaceId header was sent, verify the workspace exists
+    if (workspaceId !== null) {
+      const ws = await db
+        .select({ id: workspaces.id })
+        .from(workspaces)
+        .where(eq(workspaces.id, workspaceId));
+      if (ws.length === 0) {
+        return NextResponse.json(
+          { error: "Workspace not found" },
+          { status: 404 }
+        );
+      }
+    }
+
+    const createData: InferInsertModel<typeof programs> = {
+      name,
+      programTypeId,
+      workspaceId: workspaceId ?? null,
+    };
 
     const createWorkout = await db
       .insert(programs)
-      .values(createData as InferInsertModel<typeof programs>)
+      .values(createData)
       .returning();
 
     return NextResponse.json(

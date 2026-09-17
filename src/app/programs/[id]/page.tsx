@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { Header } from "../../../components/Header";
 import { BottomNav } from "../../../components/BottomNav";
 import { Toast } from "../../../components/Toast";
+import { useWorkspace } from "../../../hooks/useWorkspace";
 
 interface SetData {
   id: number;
@@ -44,6 +45,7 @@ export default function ProgramDetailPage({
 }) {
   const resolvedParams = use(params);
   const programId = Number(resolvedParams.id);
+  const { workspaceHeaders } = useWorkspace();
 
   const [program, setProgram] = useState<ProgramDetail | null>(null);
   const [exercises, setExercises] = useState<ExerciseData[]>([]);
@@ -87,6 +89,7 @@ export default function ProgramDetailPage({
                 try {
                   const setsRes = await fetch(
                     `/api/workoutSets?exerciseId=${ex.id}`,
+                    { headers: workspaceHeaders() },
                   );
                   if (setsRes.ok) {
                     const rawSets = await setsRes.json();
@@ -124,7 +127,7 @@ export default function ProgramDetailPage({
         setLoading(false);
       }
     },
-    [programId],
+    [programId, workspaceHeaders],
   );
 
   useEffect(() => {
@@ -150,6 +153,7 @@ export default function ProgramDetailPage({
             rawExercises.map(async (ex) => {
               const setsRes = await fetch(
                 `/api/workoutSets?exerciseId=${ex.id}`,
+                { headers: workspaceHeaders() },
               );
               const setsData = setsRes.ok ? await setsRes.json() : [];
               return {
@@ -195,7 +199,7 @@ export default function ProgramDetailPage({
 
       const res = await fetch("/api/workoutSets", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...workspaceHeaders() },
         body: JSON.stringify({
           exerciseId,
           setNumber: nextSetNumber,

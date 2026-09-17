@@ -7,7 +7,14 @@ import {
   varchar,
   boolean,
   text,
+  timestamp,
 } from "drizzle-orm/pg-core";
+
+export const workspaces = pgTable("workspaces", {
+  id: serial("id").primaryKey(),
+  code: varchar("code", { length: 12 }).notNull().unique(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
 
 export const exercises = pgTable("exercises", {
   id: serial("id").primaryKey(),
@@ -24,6 +31,7 @@ export const workoutSets = pgTable("workout_sets", {
   weightKg: numeric("weight_kg", { precision: 5, scale: 2 }),
   reps: integer("reps"),
   isChecked: boolean("is_checked").default(false),
+  workspaceId: integer("workspace_id").references(() => workspaces.id),
 });
 
 export const programTypes = pgTable("program_types", {
@@ -37,6 +45,7 @@ export const programs = pgTable("programs", {
   programTypeId: integer("program_type_id")
     .notNull()
     .references(() => programTypes.id),
+  workspaceId: integer("workspace_id").references(() => workspaces.id),
 });
 
 export const programExercises = pgTable("program_exercises", {
@@ -49,6 +58,11 @@ export const programExercises = pgTable("program_exercises", {
     .references(() => exercises.id),
 });
 
+export const workspacesRelations = relations(workspaces, ({ many }) => ({
+  programs: many(programs),
+  workoutSets: many(workoutSets),
+}));
+
 export const exercisesRelations = relations(exercises, ({ many }) => ({
   sets: many(workoutSets),
   programExercises: many(programExercises),
@@ -58,6 +72,10 @@ export const workoutSetsRelations = relations(workoutSets, ({ one }) => ({
   exercise: one(exercises, {
     fields: [workoutSets.exerciseId],
     references: [exercises.id],
+  }),
+  workspace: one(workspaces, {
+    fields: [workoutSets.workspaceId],
+    references: [workspaces.id],
   }),
 }));
 
@@ -69,6 +87,10 @@ export const programRelations = relations(programs, ({ one, many }) => ({
   programType: one(programTypes, {
     fields: [programs.programTypeId],
     references: [programTypes.id],
+  }),
+  workspace: one(workspaces, {
+    fields: [programs.workspaceId],
+    references: [workspaces.id],
   }),
   programExercises: many(programExercises),
 }));

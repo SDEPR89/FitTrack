@@ -1,7 +1,16 @@
 import { db } from "@/src/db";
 import { workoutSets } from "@/src/db/schema";
 import { NextResponse, NextRequest } from "next/server";
-import { eq, InferInsertModel } from "drizzle-orm";
+import { eq, and, InferInsertModel } from "drizzle-orm";
+
+export const dynamic = "force-dynamic";
+
+function getWorkspaceId(request: NextRequest): number | null {
+  const header = request.headers.get("x-workspace-id");
+  if (!header) return null;
+  const id = Number(header);
+  return Number.isNaN(id) ? null : id;
+}
 
 export async function GET(request: NextRequest) {
   try {
@@ -19,10 +28,24 @@ export async function GET(request: NextRequest) {
         { status: 400 }
       );
     }
-    const result = await db
-      .select()
-      .from(workoutSets)
-      .where(eq(workoutSets.exerciseId, exerciseId));
+
+    const workspaceId = getWorkspaceId(request);
+
+    const result = workspaceId !== null
+      ? await db
+          .select()
+          .from(workoutSets)
+          .where(
+            and(
+              eq(workoutSets.exerciseId, exerciseId),
+              eq(workoutSets.workspaceId, workspaceId)
+            )
+          )
+      : await db
+          .select()
+          .from(workoutSets)
+          .where(eq(workoutSets.exerciseId, exerciseId));
+
     return NextResponse.json(result);
   } catch {
     return NextResponse.json(
@@ -32,7 +55,7 @@ export async function GET(request: NextRequest) {
   }
 }
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
     let body;
     try {
@@ -45,11 +68,6 @@ export async function POST(request: Request) {
     }
 
     const { setNumber, exerciseId, weightKg, reps, isChecked } = body;
-    const createData: Partial<InferInsertModel<typeof workoutSets>> = {};
-    if (setNumber !== undefined) createData.setNumber = setNumber;
-    if (weightKg !== undefined) createData.weightKg = weightKg;
-    if (reps !== undefined) updateDataReps(createData, reps);
-    if (isChecked !== undefined) createData.isChecked = isChecked;
 
     if (!exerciseId) {
       return NextResponse.json(
@@ -57,11 +75,21 @@ export async function POST(request: Request) {
         { status: 400 }
       );
     }
-    createData.exerciseId = exerciseId;
+
+    const workspaceId = getWorkspaceId(request);
+
+    const createData: InferInsertModel<typeof workoutSets> = {
+      exerciseId,
+      workspaceId: workspaceId ?? null,
+    };
+    if (setNumber !== undefined) createData.setNumber = setNumber;
+    if (weightKg !== undefined) createData.weightKg = weightKg;
+    if (reps !== undefined) createData.reps = reps;
+    if (isChecked !== undefined) createData.isChecked = isChecked;
 
     const createWorkout = await db
       .insert(workoutSets)
-      .values(createData as InferInsertModel<typeof workoutSets>)
+      .values(createData)
       .returning();
 
     return NextResponse.json(
@@ -74,8 +102,4 @@ export async function POST(request: Request) {
       { status: 500 }
     );
   }
-}
-
-function updateDataReps(createData: Partial<InferInsertModel<typeof workoutSets>>, reps: number) {
-  createData.reps = reps;
 }
