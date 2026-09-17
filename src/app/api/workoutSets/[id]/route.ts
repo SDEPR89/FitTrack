@@ -4,6 +4,8 @@ import { workoutSets } from "@/src/db/schema";
 import { eq } from "drizzle-orm";
 import type { InferInsertModel } from "drizzle-orm";
 
+export const dynamic = "force-dynamic";
+
 export async function GET(
   _request: Request,
   { params }: { params: Promise<{ id: string }> }

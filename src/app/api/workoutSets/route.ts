@@ -3,6 +3,8 @@ import { workoutSets } from "@/src/db/schema";
 import { NextResponse, NextRequest } from "next/server";
 import { eq, InferInsertModel } from "drizzle-orm";
 
+export const dynamic = "force-dynamic";
+
 export async function GET(request: NextRequest) {
   try {
     const exerciseIdParam = request.nextUrl.searchParams.get("exerciseId");
