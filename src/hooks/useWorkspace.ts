@@ -43,12 +43,12 @@ export function useWorkspace(): UseWorkspaceReturn {
         }
       }
 
-      // Create a new workspace
+      // No stored workspace — default to DEFAULT001 so existing data is visible
       try {
         const res = await fetch("/api/workspace", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({}),
+          body: JSON.stringify({ code: "DEFAULT001" }),
         });
         if (res.ok) {
           const data: WorkspaceData = await res.json();

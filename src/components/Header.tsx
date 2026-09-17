@@ -115,20 +115,20 @@ export const Header: React.FC<HeaderProps> = ({ title = "FitTrack" }) => {
 
             {/* Switch workspace */}
             <p className="text-xs text-[var(--custom-a20)]/60 mb-2 font-medium">
-              Enter a workspace code to switch:
+              Enter a friend's code to switch workspace:
             </p>
             <input
               type="text"
               value={inputCode}
               onChange={(e) => setInputCode(e.target.value.toUpperCase())}
-              placeholder="e.g. DEFAULT001 or ABCD1234"
+              placeholder="e.g. ABCD1234"
               maxLength={12}
               className="w-full bg-[var(--custom-a10)]/40 border border-white/10 rounded-xl px-3 py-2 text-sm font-mono text-[var(--custom-a30)] placeholder:text-[var(--custom-a20)]/40 focus:outline-none focus:border-[var(--custom-a30)]/40 mb-2"
             />
             {switchError && (
               <p className="text-xs text-red-400 mb-2">{switchError}</p>
             )}
-            <div className="flex gap-2">
+            <div className="flex gap-2 mb-3">
               <button
                 onClick={() => { setShowModal(false); setSwitchError(""); setInputCode(""); }}
                 className="flex-1 py-2 rounded-xl text-sm text-[var(--custom-a20)] bg-[var(--custom-a10)]/30 hover:bg-[var(--custom-a10)]/50 transition-colors"
@@ -141,6 +141,40 @@ export const Header: React.FC<HeaderProps> = ({ title = "FitTrack" }) => {
                 className="flex-1 py-2 rounded-xl text-sm font-semibold text-[var(--custom-a0)] bg-[var(--custom-a40)] hover:opacity-90 transition-opacity disabled:opacity-40"
               >
                 {switching ? "Switching…" : "Switch"}
+              </button>
+            </div>
+
+            {/* New workspace for friends */}
+            <div className="border-t border-white/10 pt-3">
+              <p className="text-[10px] text-[var(--custom-a20)]/50 mb-2">
+                Want your own private space?
+              </p>
+              <button
+                onClick={async () => {
+                  setSwitching(true);
+                  try {
+                    const res = await fetch("/api/workspace", {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({}),
+                    });
+                    if (res.ok) {
+                      const data = await res.json();
+                      localStorage.setItem("fittrack_workspace", JSON.stringify(data));
+                      setShowModal(false);
+                      window.location.reload();
+                    }
+                  } catch {
+                    setSwitchError("Failed to create workspace.");
+                  } finally {
+                    setSwitching(false);
+                  }
+                }}
+                disabled={switching}
+                className="w-full py-2 rounded-xl text-xs font-medium text-[var(--custom-a20)] bg-[var(--custom-a10)]/30 hover:bg-[var(--custom-a10)]/50 transition-colors flex items-center justify-center gap-1.5 disabled:opacity-40"
+              >
+                <span className="material-symbols-outlined text-[14px]">add_circle</span>
+                Generate my own new workspace
               </button>
             </div>
           </div>
