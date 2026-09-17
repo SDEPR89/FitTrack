@@ -5,7 +5,7 @@ import Link from "next/link";
 import { Header } from "../../components/Header";
 import { BottomNav } from "../../components/BottomNav";
 import { Toast } from "../../components/Toast";
-import { useWorkspace } from "../../hooks/useWorkspace";
+import { useWorkspace, wsHeader } from "../../hooks/useWorkspace";
 
 interface ProgramItem {
   id: number;
@@ -20,7 +20,7 @@ interface ProgramTypeItem {
 }
 
 export default function ProgramLibraryPage() {
-  const { workspaceHeaders, isLoading: wsLoading } = useWorkspace();
+  const { id: workspaceId, isLoading: wsLoading } = useWorkspace();
   const [programs, setPrograms] = useState<ProgramItem[]>([]);
   const [programTypes, setProgramTypes] = useState<ProgramTypeItem[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
@@ -40,7 +40,7 @@ export default function ProgramLibraryPage() {
       try {
         setLoading(true);
         const [progsRes, typesRes] = await Promise.all([
-          fetch("/api/programs", { headers: workspaceHeaders() }),
+          fetch("/api/programs", { headers: wsHeader(workspaceId) }),
           fetch("/api/programTypes"),
         ]);
 
@@ -77,11 +77,11 @@ export default function ProgramLibraryPage() {
     return () => {
       isMounted = false;
     };
-  }, [wsLoading]);
+  }, [wsLoading, workspaceId]);
 
   const refetchPrograms = async () => {
     try {
-      const res = await fetch("/api/programs", { headers: workspaceHeaders() });
+      const res = await fetch("/api/programs", { headers: wsHeader(workspaceId) });
       if (res.ok) {
         const data = await res.json();
         if (Array.isArray(data)) {
@@ -102,7 +102,7 @@ export default function ProgramLibraryPage() {
       setToastMsg("");
       const res = await fetch("/api/programs", {
         method: "POST",
-        headers: { "Content-Type": "application/json", ...workspaceHeaders() },
+        headers: { "Content-Type": "application/json", ...wsHeader(workspaceId) },
         body: JSON.stringify({
           name: newProgramName.trim(),
           programTypeId: Number(selectedTypeId),

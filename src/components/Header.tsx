@@ -2,14 +2,14 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
-import { useWorkspace } from "@/src/hooks/useWorkspace";
+import { useWorkspace, wsHeader } from "@/src/hooks/useWorkspace";
 
 interface HeaderProps {
   title?: string;
 }
 
 export const Header: React.FC<HeaderProps> = ({ title = "FitTrack" }) => {
-  const { code, isLoading, switchWorkspace } = useWorkspace();
+  const { code, isLoading, id, switchWorkspace } = useWorkspace();
   const [showModal, setShowModal] = useState<boolean>(false);
   const [inputCode, setInputCode] = useState<string>("");
   const [copyMsg, setCopyMsg] = useState<string>("");
@@ -38,6 +38,9 @@ export const Header: React.FC<HeaderProps> = ({ title = "FitTrack" }) => {
       setSwitchError("Code not found. Check it and try again.");
     }
   }
+
+  // Suppress unused warning — wsHeader is re-exported for consumers via this module
+  void wsHeader;
 
   return (
     <>
@@ -95,7 +98,7 @@ export const Header: React.FC<HeaderProps> = ({ title = "FitTrack" }) => {
             </p>
 
             {/* Current code */}
-            <div className="flex items-center gap-2 bg-[var(--custom-a10)]/40 rounded-xl px-3 py-2 mb-4">
+            <div className="flex items-center gap-2 bg-[var(--custom-a10)]/40 rounded-xl px-3 py-2 mb-1">
               <span className="font-mono text-xl font-bold tracking-[0.2em] text-[var(--custom-a30)] flex-1">
                 {code ?? "···"}
               </span>
@@ -106,6 +109,9 @@ export const Header: React.FC<HeaderProps> = ({ title = "FitTrack" }) => {
                 {copyMsg || "Copy"}
               </button>
             </div>
+            <p className="text-[10px] text-[var(--custom-a20)]/50 mb-4">
+              Workspace ID: {id ?? "—"}
+            </p>
 
             {/* Switch workspace */}
             <p className="text-xs text-[var(--custom-a20)]/60 mb-2 font-medium">
@@ -115,7 +121,7 @@ export const Header: React.FC<HeaderProps> = ({ title = "FitTrack" }) => {
               type="text"
               value={inputCode}
               onChange={(e) => setInputCode(e.target.value.toUpperCase())}
-              placeholder="e.g. ABCD1234"
+              placeholder="e.g. DEFAULT001 or ABCD1234"
               maxLength={12}
               className="w-full bg-[var(--custom-a10)]/40 border border-white/10 rounded-xl px-3 py-2 text-sm font-mono text-[var(--custom-a30)] placeholder:text-[var(--custom-a20)]/40 focus:outline-none focus:border-[var(--custom-a30)]/40 mb-2"
             />

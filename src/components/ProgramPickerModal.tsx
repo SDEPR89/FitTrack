@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import { wsHeader } from "@/src/hooks/useWorkspace";
 
 interface ProgramItem {
   id: number;
@@ -14,7 +15,7 @@ interface ProgramPickerModalProps {
   currentProgram?: string;
   onClose: () => void;
   onSelectProgram: (day: string, program: string, programId?: number) => void;
-  workspaceHeaders?: Record<string, string>;
+  workspaceId: number | null;
 }
 
 export const ProgramPickerModal: React.FC<ProgramPickerModalProps> = ({
@@ -23,7 +24,7 @@ export const ProgramPickerModal: React.FC<ProgramPickerModalProps> = ({
   currentProgram,
   onClose,
   onSelectProgram,
-  workspaceHeaders = {},
+  workspaceId,
 }) => {
   const [programs, setPrograms] = useState<ProgramItem[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
@@ -35,7 +36,7 @@ export const ProgramPickerModal: React.FC<ProgramPickerModalProps> = ({
       try {
         setLoading(true);
         setErrorMsg("");
-        const res = await fetch("/api/programs", { headers: workspaceHeaders });
+        const res = await fetch("/api/programs", { headers: wsHeader(workspaceId) });
         if (res.ok) {
           const data = await res.json();
           if (Array.isArray(data)) {
@@ -53,7 +54,7 @@ export const ProgramPickerModal: React.FC<ProgramPickerModalProps> = ({
       }
     }
     fetchPrograms();
-  }, [isOpen]);
+  }, [isOpen, workspaceId]);
 
   if (!isOpen) return null;
 
@@ -122,8 +123,11 @@ export const ProgramPickerModal: React.FC<ProgramPickerModalProps> = ({
               );
             })
           ) : (
-            <div className="text-center py-6 text-[var(--custom-a20)] text-xs">
-              No routines found. Create a program first in the Programs tab.
+            <div className="flex flex-col items-center py-6 gap-2 text-center">
+              <span className="text-[var(--custom-a20)] text-xs">No routines found in this workspace.</span>
+              <span className="text-[var(--custom-a20)]/50 text-[10px]">
+                Go to Programs tab to create one, or switch workspace via the key badge.
+              </span>
             </div>
           )}
 

@@ -5,7 +5,7 @@ import Link from "next/link";
 import { Header } from "../components/Header";
 import { BottomNav } from "../components/BottomNav";
 import { ProgramPickerModal } from "../components/ProgramPickerModal";
-import { useWorkspace } from "../hooks/useWorkspace";
+import { useWorkspace, wsHeader } from "../hooks/useWorkspace";
 
 interface DaySchedule {
   day: string;
@@ -38,7 +38,7 @@ function applyToday(schedule: DaySchedule[]): DaySchedule[] {
 }
 
 export default function WeeklySchedulePage() {
-  const { workspaceHeaders, isLoading: wsLoading } = useWorkspace();
+  const { id: workspaceId, isLoading: wsLoading } = useWorkspace();
   const [schedule, setSchedule] = useState<DaySchedule[]>(applyToday(CLEAN_SCHEDULE));
   const [scheduleLoading, setScheduleLoading] = useState<boolean>(true);
   const [pickerState, setPickerState] = useState<{
@@ -55,7 +55,7 @@ export default function WeeklySchedulePage() {
     async function loadSchedule() {
       setScheduleLoading(true);
       try {
-        const res = await fetch("/api/schedule", { headers: workspaceHeaders() });
+        const res = await fetch("/api/schedule", { headers: wsHeader(workspaceId) });
         if (res.ok) {
           const data = await res.json();
           if (!cancelled && data.schedule) {
@@ -78,20 +78,20 @@ export default function WeeklySchedulePage() {
 
     loadSchedule();
     return () => { cancelled = true; };
-  }, [wsLoading]);
+  }, [wsLoading, workspaceId]);
 
   const saveSchedule = useCallback(async (updated: DaySchedule[]) => {
     setSchedule(applyToday(updated));
     try {
       await fetch("/api/schedule", {
         method: "PUT",
-        headers: { "Content-Type": "application/json", ...workspaceHeaders() },
+        headers: { "Content-Type": "application/json", ...wsHeader(workspaceId) },
         body: JSON.stringify({ schedule: JSON.stringify(updated) }),
       });
     } catch {
       // Silent — schedule already updated locally
     }
-  }, [workspaceHeaders]);
+  }, [workspaceId]);
 
   const openPicker = (dayName: string, currentProgram: string) => {
     setPickerState({ isOpen: true, dayName, currentProgram });
@@ -283,7 +283,7 @@ export default function WeeklySchedulePage() {
         currentProgram={pickerState.currentProgram}
         onClose={closePicker}
         onSelectProgram={handleSelectProgram}
-        workspaceHeaders={workspaceHeaders()}
+        workspaceId={workspaceId}
       />
     </>
   );

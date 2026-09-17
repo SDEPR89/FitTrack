@@ -15,12 +15,11 @@ interface WorkspaceData {
   code: string;
 }
 
-// Returns workspace state and a function to switch workspace by code.
-// workspaceHeaders() returns a headers object to spread into fetch() calls.
-export function useWorkspace(): WorkspaceState & {
+export interface UseWorkspaceReturn extends WorkspaceState {
   switchWorkspace: (code: string) => Promise<boolean>;
-  workspaceHeaders: () => Record<string, string>;
-} {
+}
+
+export function useWorkspace(): UseWorkspaceReturn {
   const [state, setState] = useState<WorkspaceState>({
     id: null,
     code: null,
@@ -31,19 +30,16 @@ export function useWorkspace(): WorkspaceState & {
     let cancelled = false;
 
     async function init() {
-      // Check localStorage first
       const stored = localStorage.getItem(STORAGE_KEY);
       if (stored) {
         try {
           const parsed: WorkspaceData = JSON.parse(stored);
           if (parsed.id && parsed.code) {
-            if (!cancelled) {
-              setState({ id: parsed.id, code: parsed.code, isLoading: false });
-            }
+            if (!cancelled) setState({ id: parsed.id, code: parsed.code, isLoading: false });
             return;
           }
         } catch {
-          // Corrupt stored value — fall through to create new
+          // Corrupt — fall through
         }
       }
 
@@ -57,9 +53,7 @@ export function useWorkspace(): WorkspaceState & {
         if (res.ok) {
           const data: WorkspaceData = await res.json();
           localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-          if (!cancelled) {
-            setState({ id: data.id, code: data.code, isLoading: false });
-          }
+          if (!cancelled) setState({ id: data.id, code: data.code, isLoading: false });
         } else {
           if (!cancelled) setState((s) => ({ ...s, isLoading: false }));
         }
@@ -69,9 +63,7 @@ export function useWorkspace(): WorkspaceState & {
     }
 
     init();
-    return () => {
-      cancelled = true;
-    };
+    return () => { cancelled = true; };
   }, []);
 
   async function switchWorkspace(code: string): Promise<boolean> {
@@ -91,10 +83,12 @@ export function useWorkspace(): WorkspaceState & {
     }
   }
 
-  function workspaceHeaders(): Record<string, string> {
-    if (state.id === null) return {};
-    return { "x-workspace-id": String(state.id) };
-  }
+  return { ...state, switchWorkspace };
+}
 
-  return { ...state, switchWorkspace, workspaceHeaders };
+// Helper — build the x-workspace-id header from an id.
+// Use this inline in fetch calls, e.g.: wsHeader(id)
+export function wsHeader(id: number | null): Record<string, string> {
+  if (id === null) return {};
+  return { "x-workspace-id": String(id) };
 }
