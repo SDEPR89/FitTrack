@@ -2,8 +2,6 @@ import { db } from "@/src/db";
 import { programTypes } from "@/src/db/schema";
 import { NextResponse } from "next/server";
 
-export const dynamic = "force-dynamic";
-
 export async function GET() {
   try {
     const types = await db.select().from(programTypes);

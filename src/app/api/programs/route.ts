@@ -3,8 +3,6 @@ import { programs, programTypes } from "@/src/db/schema";
 import { NextResponse } from "next/server";
 import { InferInsertModel, eq } from "drizzle-orm";
 
-export const dynamic = "force-dynamic";
-
 export async function GET() {
   try {
     const allPrograms = await db

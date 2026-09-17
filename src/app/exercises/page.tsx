@@ -142,9 +142,7 @@ export default function ExercisesPage() {
 
   const handleAddExercise = async (e: React.FormEvent) => {
     e.preventDefault();
-    const cleanName = String(newName || "").trim();
-    const cleanCat = String(newCategory || "").trim();
-    if (!cleanName || !cleanCat) return;
+    if (!newName.trim() || !newCategory.trim()) return;
 
     try {
       setIsSaving(true);
@@ -153,10 +151,10 @@ export default function ExercisesPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          name: cleanName.toUpperCase(),
-          category: cleanCat
+          name: newName.trim().toUpperCase(),
+          category: newCategory
             .split(",")
-            .map((c) => String(c ?? "").trim().toUpperCase())
+            .map((c) => String(c).trim().toUpperCase())
             .filter(Boolean),
         }),
       });
@@ -215,9 +213,9 @@ export default function ExercisesPage() {
 
   const filteredExercises = exercises.filter((ex) => {
     const matchesCategory = matchCategory(ex.category, selectedCategory);
-    const queryStr = String(searchQuery || "").trim().toLowerCase();
-    const exNameStr = String(ex.name || "").toLowerCase();
-    const matchesSearch = !queryStr || exNameStr.includes(queryStr);
+    const matchesSearch =
+      !searchQuery.trim() ||
+      ex.name.toLowerCase().includes(searchQuery.toLowerCase().trim());
     return matchesCategory && matchesSearch;
   });
 
