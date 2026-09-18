@@ -1,0 +1,27 @@
+"use client";
+
+import { useEffect } from "react";
+
+export function PwaRegistrar() {
+  useEffect(() => {
+    if (process.env.NODE_ENV !== "production" || !("serviceWorker" in navigator)) {
+      return;
+    }
+
+    const register = () => {
+      navigator.serviceWorker.register("/sw.js").catch(() => {
+        // PWA support should never block the workout UI.
+      });
+    };
+
+    if (document.readyState === "complete") {
+      register();
+      return;
+    }
+
+    window.addEventListener("load", register);
+    return () => window.removeEventListener("load", register);
+  }, []);
+
+  return null;
+}

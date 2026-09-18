@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="FitTrack">
+  <rect width="512" height="512" rx="112" fill="#11131f"/>
+  <path d="M152 250h48v-42c0-31 25-56 56-56s56 25 56 56v42h48v-42c0-57-47-104-104-104s-104 47-104 104v42Z" fill="#eef0f6"/>
+  <path d="M112 274h288c13 0 24 11 24 24v58c0 13-11 24-24 24H112c-13 0-24-11-24-24v-58c0-13 11-24 24-24Z" fill="#8ea0ff"/>
+  <path d="M136 316h44m152 0h44" stroke="#11131f" stroke-width="28" stroke-linecap="round"/>
+  <path d="M224 326h64" stroke="#eef0f6" stroke-width="24" stroke-linecap="round"/>
+</svg>
