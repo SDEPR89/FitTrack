@@ -51,6 +51,10 @@ function byExerciseName(a: ExerciseItem, b: ExerciseItem): number {
   return a.name.localeCompare(b.name, undefined, { sensitivity: "base" });
 }
 
+function byCategoryName(a: string, b: string): number {
+  return a.localeCompare(b, undefined, { sensitivity: "base" });
+}
+
 export default function ExercisesPage() {
   const [exercises, setExercises] = useState<ExerciseItem[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
@@ -82,7 +86,7 @@ export default function ExercisesPage() {
       });
     });
 
-    return list;
+    return list.sort(byCategoryName);
   }, [exercises]);
 
   const fetchExercises = useCallback(async () => {
