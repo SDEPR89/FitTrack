@@ -1,7 +1,23 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="FitTrack">
-  <rect width="512" height="512" rx="112" fill="#11131f"/>
-  <path d="M152 250h48v-42c0-31 25-56 56-56s56 25 56 56v42h48v-42c0-57-47-104-104-104s-104 47-104 104v42Z" fill="#eef0f6"/>
-  <path d="M112 274h288c13 0 24 11 24 24v58c0 13-11 24-24 24H112c-13 0-24-11-24-24v-58c0-13 11-24 24-24Z" fill="#8ea0ff"/>
-  <path d="M136 316h44m152 0h44" stroke="#11131f" stroke-width="28" stroke-linecap="round"/>
-  <path d="M224 326h64" stroke="#eef0f6" stroke-width="24" stroke-linecap="round"/>
+<svg width="200" height="200" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+  <rect x="0" y="0" width="200" height="200" rx="44" fill="#FFFFFF"/>
+
+  <g transform="rotate(45 100 100)" fill="#161B33">
+    <rect x="44" y="84" width="8" height="32" rx="3"/>
+    <rect x="54" y="78" width="10" height="44" rx="4"/>
+    <rect x="66" y="70" width="12" height="60" rx="4"/>
+
+    <rect x="148" y="84" width="8" height="32" rx="3"/>
+    <rect x="136" y="78" width="10" height="44" rx="4"/>
+    <rect x="122" y="70" width="12" height="60" rx="4"/>
+
+    <rect x="78" y="96" width="44" height="8" rx="4"/>
+  </g>
+
+  <g fill="#161B33">
+    <path d="M62 50 C63 58, 66 61, 74 62 C66 63, 63 66, 62 74 C61 66, 58 63, 50 62 C58 61, 61 58, 62 50 Z"/>
+  </g>
+
+  <g fill="#161B33">
+    <path d="M138 126 C139 134, 142 137, 150 138 C142 139, 139 142, 138 150 C137 142, 134 139, 126 138 C134 137, 137 134, 138 126 Z"/>
+  </g>
 </svg>
