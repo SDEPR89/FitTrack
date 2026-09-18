@@ -80,7 +80,7 @@ export async function POST(request: NextRequest) {
     }
 
     const createData: InferInsertModel<typeof programs> = {
-      name,
+      name: String(name).trim().toUpperCase(),
       programTypeId,
       workspaceId: workspaceId ?? null,
     };

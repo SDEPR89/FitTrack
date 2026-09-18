@@ -47,6 +47,10 @@ function matchCategory(
   });
 }
 
+function byExerciseName(a: ExerciseItem, b: ExerciseItem): number {
+  return a.name.localeCompare(b.name, undefined, { sensitivity: "base" });
+}
+
 export default function ExercisesPage() {
   const [exercises, setExercises] = useState<ExerciseItem[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
@@ -218,6 +222,7 @@ export default function ExercisesPage() {
       ex.name.toLowerCase().includes(searchQuery.toLowerCase().trim());
     return matchesCategory && matchesSearch;
   });
+  const sortedFilteredExercises = [...filteredExercises].sort(byExerciseName);
 
   const filterCategories = ["All", ...databaseCategories];
 
@@ -246,6 +251,83 @@ export default function ExercisesPage() {
             </p>
           </section>
 
+          {/* Add New Exercise Card Form */}
+          <section className="w-full rounded-3xl glass-panel p-5 flex flex-col gap-4">
+            <div className="flex items-center justify-between border-b border-white/10 pb-3">
+              <div className="flex items-center gap-2">
+                <div className="w-7 h-7 rounded-lg bg-[var(--custom-a40)]/20 text-[var(--custom-a40)] flex items-center justify-center font-bold">
+                  <span className="material-symbols-outlined text-[16px]">
+                    post_add
+                  </span>
+                </div>
+                <h2 className="text-sm font-bold text-[var(--custom-a30)]">
+                  Add New Exercise
+                </h2>
+              </div>
+              <span className="font-mono text-[10px] font-bold text-[var(--custom-a40)] uppercase tracking-wider px-2 py-0.5 rounded-full bg-[var(--custom-a40)]/15 border border-[var(--custom-a40)]/30">
+                Database Entry
+              </span>
+            </div>
+
+            <form onSubmit={handleAddExercise} className="flex flex-col gap-4">
+              <div className="flex flex-col gap-1.5">
+                <label
+                  htmlFor="exercise-name-input"
+                  className="text-xs font-semibold text-[var(--custom-a20)]"
+                >
+                  Exercise Name
+                </label>
+                <input
+                  id="exercise-name-input"
+                  type="text"
+                  required
+                  placeholder="e.g. ROMANIAN DEADLIFT"
+                  value={newName}
+                  onChange={(e) => setNewName(e.target.value)}
+                  className="w-full h-11 px-3.5 rounded-2xl neu-inset text-sm font-mono font-bold text-[var(--custom-a30)] placeholder:text-[var(--custom-a20)]/50 placeholder:font-sans placeholder:font-normal focus:outline-none focus:border-[var(--custom-a40)]/60 transition-all"
+                />
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <label
+                  htmlFor="exercise-category-input"
+                  className="text-xs font-semibold text-[var(--custom-a20)]"
+                >
+                  Target Muscle Groups (comma-separated for multiple)
+                </label>
+                <input
+                  id="exercise-category-input"
+                  type="text"
+                  required
+                  placeholder="e.g. CHEST, ANTERIOR DELTOID, TRICEPS"
+                  value={newCategory}
+                  onChange={(e) => setNewCategory(e.target.value)}
+                  className="w-full h-11 px-3.5 rounded-2xl neu-inset text-sm font-mono font-bold text-[var(--custom-a30)] placeholder:text-[var(--custom-a20)]/50 placeholder:font-sans placeholder:font-normal focus:outline-none focus:border-[var(--custom-a40)]/60 transition-all"
+                />
+              </div>
+
+              <button
+                type="submit"
+                disabled={isSaving}
+                className="w-full h-11 rounded-2xl bg-[var(--custom-a40)] hover:opacity-95 text-[var(--custom-a0)] font-bold text-xs flex items-center justify-center gap-1.5 shadow-md transition-all cursor-pointer disabled:opacity-60 mt-1"
+              >
+                {isSaving ? (
+                  <>
+                    <span className="w-4 h-4 rounded-full border-2 border-current border-t-transparent animate-spin"></span>
+                    <span>Saving Exercise...</span>
+                  </>
+                ) : (
+                  <>
+                    <span className="material-symbols-outlined text-[18px]">
+                      add_circle
+                    </span>
+                    <span>Save Exercise</span>
+                  </>
+                )}
+              </button>
+            </form>
+          </section>
+
           {/* Search & Filter Section */}
           <section className="flex flex-col gap-3">
             <div className="flex items-center justify-between">
@@ -253,8 +335,8 @@ export default function ExercisesPage() {
                 Filter Library
               </span>
               <span className="font-mono text-xs text-[var(--custom-a40)] font-bold">
-                {filteredExercises.length}{" "}
-                {filteredExercises.length === 1 ? "exercise" : "exercises"}
+                {sortedFilteredExercises.length}{" "}
+                {sortedFilteredExercises.length === 1 ? "exercise" : "exercises"}
               </span>
             </div>
 
@@ -314,9 +396,9 @@ export default function ExercisesPage() {
               <span className="w-4 h-4 rounded-full border-2 border-current border-t-transparent animate-spin"></span>
               <span>Loading exercise library...</span>
             </div>
-          ) : filteredExercises.length > 0 ? (
+          ) : sortedFilteredExercises.length > 0 ? (
             <section className="flex flex-col gap-2.5">
-              {filteredExercises.map((exercise) => (
+              {sortedFilteredExercises.map((exercise) => (
                 <article
                   key={exercise.id}
                   className="w-full min-h-[56px] rounded-2xl glass-panel px-4 py-3 flex items-center justify-between gap-3 transition-all"
@@ -376,85 +458,6 @@ export default function ExercisesPage() {
             </div>
           )}
 
-          {/* Add New Exercise Card Form */}
-          <section className="w-full rounded-3xl glass-panel p-5 flex flex-col gap-4">
-            <div className="flex items-center justify-between border-b border-white/10 pb-3">
-              <div className="flex items-center gap-2">
-                <div className="w-7 h-7 rounded-lg bg-[var(--custom-a40)]/20 text-[var(--custom-a40)] flex items-center justify-center font-bold">
-                  <span className="material-symbols-outlined text-[16px]">
-                    post_add
-                  </span>
-                </div>
-                <h2 className="text-sm font-bold text-[var(--custom-a30)]">
-                  Add New Exercise
-                </h2>
-              </div>
-              <span className="font-mono text-[10px] font-bold text-[var(--custom-a40)] uppercase tracking-wider px-2 py-0.5 rounded-full bg-[var(--custom-a40)]/15 border border-[var(--custom-a40)]/30">
-                Database Entry
-              </span>
-            </div>
-
-            <form onSubmit={handleAddExercise} className="flex flex-col gap-4">
-              {/* Exercise Name Input */}
-              <div className="flex flex-col gap-1.5">
-                <label
-                  htmlFor="exercise-name-input"
-                  className="text-xs font-semibold text-[var(--custom-a20)]"
-                >
-                  Exercise Name
-                </label>
-                <input
-                  id="exercise-name-input"
-                  type="text"
-                  required
-                  placeholder="e.g. ROMANIAN DEADLIFT"
-                  value={newName}
-                  onChange={(e) => setNewName(e.target.value.toUpperCase())}
-                  className="w-full h-11 px-3.5 rounded-2xl neu-inset text-sm font-mono font-bold uppercase text-[var(--custom-a30)] placeholder:text-[var(--custom-a20)]/50 placeholder:font-sans placeholder:font-normal focus:outline-none focus:border-[var(--custom-a40)]/60 transition-all"
-                />
-              </div>
-
-              {/* Target Muscle Group Input (Typeable) */}
-              <div className="flex flex-col gap-1.5">
-                <label
-                  htmlFor="exercise-category-input"
-                  className="text-xs font-semibold text-[var(--custom-a20)]"
-                >
-                  Target Muscle Groups (comma-separated for multiple)
-                </label>
-                <input
-                  id="exercise-category-input"
-                  type="text"
-                  required
-                  placeholder="e.g. CHEST, ANTERIOR DELTOID, TRICEPS"
-                  value={newCategory}
-                  onChange={(e) => setNewCategory(e.target.value.toUpperCase())}
-                  className="w-full h-11 px-3.5 rounded-2xl neu-inset text-sm font-mono font-bold uppercase text-[var(--custom-a30)] placeholder:text-[var(--custom-a20)]/50 placeholder:font-sans placeholder:font-normal focus:outline-none focus:border-[var(--custom-a40)]/60 transition-all"
-                />
-              </div>
-
-              {/* Save Exercise Button with loading spinner */}
-              <button
-                type="submit"
-                disabled={isSaving}
-                className="w-full h-11 rounded-2xl bg-[var(--custom-a40)] hover:opacity-95 text-[var(--custom-a0)] font-bold text-xs flex items-center justify-center gap-1.5 shadow-md transition-all cursor-pointer disabled:opacity-60 mt-1"
-              >
-                {isSaving ? (
-                  <>
-                    <span className="w-4 h-4 rounded-full border-2 border-current border-t-transparent animate-spin"></span>
-                    <span>Saving Exercise...</span>
-                  </>
-                ) : (
-                  <>
-                    <span className="material-symbols-outlined text-[18px]">
-                      add_circle
-                    </span>
-                    <span>Save Exercise</span>
-                  </>
-                )}
-              </button>
-            </form>
-          </section>
         </div>
       </main>
       <BottomNav />

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback, use } from "react";
+import React, { useState, useEffect, use } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Header } from "../../../components/Header";
@@ -38,6 +38,10 @@ interface ProgramDetail {
   exercises: ExerciseData[];
 }
 
+function byExerciseName<T extends { name: string }>(a: T, b: T): number {
+  return a.name.localeCompare(b.name, undefined, { sensitivity: "base" });
+}
+
 export default function ProgramDetailPage({
   params,
 }: {
@@ -58,77 +62,8 @@ export default function ProgramDetailPage({
     Array<{ id: number; name: string; category: string[] | string }>
   >([]);
   const [loadingAvailable, setLoadingAvailable] = useState<boolean>(false);
-  const [addingExerciseId, setAddingExerciseId] = useState<number | null>(null);
-
-  // Fetch program detail and workout sets for each exercise
-  const loadProgramDetail = useCallback(
-    async (showLoadingState: boolean = true) => {
-      if (isNaN(programId)) return;
-      try {
-        if (showLoadingState) setLoading(true);
-        const res = await fetch(`/api/programs/${programId}`);
-        if (!res.ok) {
-          const errData = await res.json().catch(() => ({}));
-          setToastMessage(errData.error || "Program not found");
-          return;
-        }
-
-        const progData = await res.json();
-        setProgram({
-          id: progData.id,
-          name: progData.name,
-          programTypeId: progData.programTypeId,
-          exercises: progData.exercises || [],
-        });
-
-        if (Array.isArray(progData.exercises)) {
-          const exercisesWithSets = await Promise.all(
-            progData.exercises.map(
-              async (ex: { id: number; name: string; category: string }) => {
-                let sets: SetData[] = [];
-                try {
-                  const setsRes = await fetch(
-                    `/api/workoutSets?exerciseId=${ex.id}`,
-                    { headers: wsHeader(workspaceId) },
-                  );
-                  if (setsRes.ok) {
-                    const rawSets = await setsRes.json();
-                    if (Array.isArray(rawSets)) {
-                      sets = rawSets.map((s) => ({
-                        id: s.id,
-                        setNumber: s.setNumber || 1,
-                        weightKg:
-                          s.weightKg !== null && s.weightKg !== undefined
-                            ? String(s.weightKg)
-                            : "0",
-                        reps: s.reps || 0,
-                        isChecked: Boolean(s.isChecked),
-                      }));
-                    }
-                  }
-                } catch (e) {
-                  console.error(`Error loading sets for exercise ${ex.id}:`, e);
-                }
-                return {
-                  id: ex.id,
-                  name: ex.name,
-                  category: ex.category,
-                  sets,
-                };
-              },
-            ),
-          );
-          setExercises(exercisesWithSets);
-        }
-      } catch (err) {
-        console.error("Error loading program detail:", err);
-        setToastMessage("Failed to load program details");
-      } finally {
-        setLoading(false);
-      }
-    },
-    [programId, workspaceId],
-  );
+  const [exerciseSearchQuery, setExerciseSearchQuery] = useState<string>("");
+  const [togglingExerciseIds, setTogglingExerciseIds] = useState<number[]>([]);
 
   useEffect(() => {
     let isMounted = true;
@@ -162,7 +97,7 @@ export default function ProgramDetailPage({
               };
             }),
           );
-          setExercises(exercisesWithSets);
+          setExercises([...exercisesWithSets].sort(byExerciseName));
         }
       } catch (err) {
         console.error("Error loading program detail:", err);
@@ -372,6 +307,7 @@ export default function ProgramDetailPage({
   // Add Exercise to Program Modal
   const handleOpenAddExerciseModal = async () => {
     setIsAddModalOpen(true);
+    setExerciseSearchQuery("");
     try {
       setLoadingAvailable(true);
       const res = await fetch("/api/exercises");
@@ -388,26 +324,45 @@ export default function ProgramDetailPage({
     }
   };
 
-  const handleAddExerciseToProgram = async (exId: number) => {
+  const handleToggleExerciseInProgram = async (ex: {
+    id: number;
+    name: string;
+    category: string[] | string;
+  }) => {
+    const isAlreadyAdded = exercises.some((exercise) => exercise.id === ex.id);
     try {
-      setAddingExerciseId(exId);
-      const res = await fetch(`/api/programs/${programId}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ exerciseId: exId }),
-      });
-      if (res.ok) {
-        await loadProgramDetail();
-        setIsAddModalOpen(false);
+      setTogglingExerciseIds((prev) => [...prev, ex.id]);
+      if (isAlreadyAdded) {
+        const res = await fetch(`/api/programs/${programId}?exerciseId=${ex.id}`, {
+          method: "DELETE",
+        });
+        if (!res.ok) {
+          const errData = await res.json().catch(() => ({}));
+          throw new Error(errData.error || "Failed to remove exercise");
+        }
+        setExercises((prev) => prev.filter((exercise) => exercise.id !== ex.id));
       } else {
-        const errData = await res.json().catch(() => ({}));
-        setToastMessage(errData.error || "Failed to add exercise to program");
+        const res = await fetch(`/api/programs/${programId}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ exerciseId: ex.id }),
+        });
+        if (!res.ok) {
+          const errData = await res.json().catch(() => ({}));
+          throw new Error(errData.error || "Failed to add exercise");
+        }
+        setExercises((prev) => [
+          ...prev,
+          { id: ex.id, name: ex.name, category: ex.category, sets: [] },
+        ].sort(byExerciseName));
       }
     } catch (err) {
-      console.error("Error adding exercise to program:", err);
-      setToastMessage("Network error adding exercise");
+      console.error("Error toggling exercise:", err);
+      setToastMessage(
+        err instanceof Error ? err.message : "Network error updating exercise",
+      );
     } finally {
-      setAddingExerciseId(null);
+      setTogglingExerciseIds((prev) => prev.filter((id) => id !== ex.id));
     }
   };
 
@@ -465,7 +420,18 @@ export default function ProgramDetailPage({
   );
   const progressPercent =
     totalSets > 0 ? Math.round((completedSets / totalSets) * 100) : 0;
-
+  const normalizedExerciseSearch = exerciseSearchQuery.trim().toLowerCase();
+  const sortedExercises = [...exercises].sort(byExerciseName);
+  const filteredAvailableExercises = availableExercises
+    .filter((ex) => {
+      if (!normalizedExerciseSearch) return true;
+      const targetText = formatMuscleCategory(ex.category).toLowerCase();
+      return (
+        ex.name.toLowerCase().includes(normalizedExerciseSearch) ||
+        targetText.includes(normalizedExerciseSearch)
+      );
+    })
+    .sort(byExerciseName);
   return (
     <>
       <Header title={program?.name || "Program Detail"} />
@@ -518,7 +484,7 @@ export default function ProgramDetailPage({
                 <span className="material-symbols-outlined text-[16px]">
                   add
                 </span>
-                <span>Add Exercise</span>
+                <span>Add Exercises</span>
               </button>
             </div>
           </div>
@@ -550,26 +516,25 @@ export default function ProgramDetailPage({
               <span className="w-4 h-4 rounded-full border-2 border-current border-t-transparent animate-spin"></span>
               <span>Loading routine details...</span>
             </div>
-          ) : exercises.length > 0 ? (
+          ) : sortedExercises.length > 0 ? (
             <div className="flex flex-col gap-5">
-              {exercises.map((exercise) => (
+              {sortedExercises.map((exercise) => (
                 <article
                   key={exercise.id}
                   className="flex flex-col gap-4 p-5 rounded-3xl glass-panel"
                 >
                   {/* Exercise Header */}
-                  <div className="flex items-center justify-between gap-3 border-b border-white/10 pb-3">
-                    <div className="flex items-center gap-2.5 min-w-0">
-                      <h2 className="text-base font-bold text-[var(--custom-a30)] truncate">
+                  <div className="flex items-start justify-between gap-3 border-b border-white/10 pb-3">
+                    <div className="flex flex-col gap-1 min-w-0 flex-1">
+                      <h2 className="text-base font-bold leading-tight text-[var(--custom-a30)] break-words">
                         {exercise.name}
                       </h2>
-                      {/* UPPERCASE CATEGORY BADGE */}
-                      <span className="font-mono text-[10px] font-bold text-[var(--custom-a40)] bg-[var(--custom-a40)]/20 px-2.5 py-0.5 rounded-full border border-[var(--custom-a40)]/40 shrink-0">
+                      <span className="font-mono text-[10px] font-bold leading-snug text-[var(--custom-a40)]">
                         {formatMuscleCategory(exercise.category)}
                       </span>
                     </div>
 
-                    <div className="flex items-center gap-2">
+                    <div className="flex shrink-0 items-center gap-2">
                       <button
                         type="button"
                         disabled={exercise.addingSet}
@@ -607,109 +572,99 @@ export default function ProgramDetailPage({
                       {exercise.sets.map((set) => (
                         <div
                           key={set.id}
-                          className={`set-row flex items-center justify-between p-3 rounded-2xl transition-all ${
+                          className={`set-row grid grid-cols-[2.35rem_2.1rem_minmax(0,1fr)_minmax(0,0.82fr)_2rem] items-center gap-1.5 p-3 rounded-2xl transition-all sm:grid-cols-[2.5rem_3.25rem_minmax(7rem,1fr)_minmax(6.25rem,0.85fr)_2.25rem] sm:gap-2 ${
                             set.isChecked ? "neu-inset" : "neu-outset"
                           }`}
                         >
-                          {/* Tactile Checkbox Control */}
-                          <div className="flex items-center gap-3">
-                            <button
-                              type="button"
-                              aria-label={`Mark set ${set.setNumber} ${
-                                set.isChecked ? "incomplete" : "complete"
-                              }`}
-                              onClick={() =>
-                                handleToggleChecked(exercise.id, set.id)
-                              }
-                              className={`w-9 h-9 rounded-xl flex items-center justify-center cursor-pointer tactile-checkbox ${
-                                set.isChecked
-                                  ? "tactile-checkbox-checked"
-                                  : "neu-outset text-transparent hover:text-[var(--custom-a20)]/40"
-                              }`}
-                            >
-                              <span className="material-symbols-outlined text-[18px] font-bold">
-                                check
-                              </span>
-                            </button>
-                            <span
-                              className={`text-xs font-semibold ${
-                                set.isChecked
-                                  ? "text-[var(--custom-a20)] line-through"
-                                  : "text-[var(--custom-a30)]"
-                              }`}
-                            >
-                              Set {set.setNumber}
+                          <button
+                            type="button"
+                            aria-label={`Mark set ${set.setNumber} ${
+                              set.isChecked ? "incomplete" : "complete"
+                            }`}
+                            onClick={() =>
+                              handleToggleChecked(exercise.id, set.id)
+                            }
+                            className={`w-9 h-9 rounded-xl flex items-center justify-center cursor-pointer tactile-checkbox ${
+                              set.isChecked
+                                ? "tactile-checkbox-checked"
+                                : "neu-outset text-transparent hover:text-[var(--custom-a20)]/40"
+                            }`}
+                          >
+                            <span className="material-symbols-outlined text-[18px] font-bold">
+                              check
                             </span>
-                          </div>
+                          </button>
+                          <span
+                            className={`text-[11px] font-semibold leading-tight ${
+                              set.isChecked
+                                ? "text-[var(--custom-a20)] line-through"
+                                : "text-[var(--custom-a30)]"
+                            }`}
+                          >
+                            Set<br />
+                            {set.setNumber}
+                          </span>
 
-                          {/* Independent Weight & Reps Inputs */}
-                          <div className="flex items-center gap-2">
-                            {/* Editable Weight Input */}
-                            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-black/40 border border-white/5">
-                              <span className="text-[10px] font-mono text-[var(--custom-a20)] font-semibold uppercase">
-                                kg
-                              </span>
-                              <input
-                                type="number"
-                                min="0"
-                                step="0.5"
-                                value={set.weightKg}
-                                onFocus={(e) => e.target.select()}
-                                onChange={(e) =>
-                                  handleWeightChange(
-                                    exercise.id,
-                                    set.id,
-                                    e.target.value,
-                                  )
-                                }
-                                onBlur={(e) =>
-                                  handleWeightBlur(set.id, e.target.value)
-                                }
-                                className="w-14 h-7 bg-transparent text-center font-mono text-sm font-bold text-[var(--custom-a30)] outline-none focus:text-[var(--custom-a40)]"
-                              />
-                            </div>
-
-                            {/* Editable Reps Input */}
-                            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-black/40 border border-white/5">
-                              <span className="text-[10px] font-mono text-[var(--custom-a20)] font-semibold uppercase">
-                                reps
-                              </span>
-                              <input
-                                type="number"
-                                min="0"
-                                value={set.reps}
-                                onFocus={(e) => e.target.select()}
-                                onChange={(e) =>
-                                  handleRepsChange(
-                                    exercise.id,
-                                    set.id,
-                                    e.target.value,
-                                  )
-                                }
-                                onBlur={(e) =>
-                                  handleRepsBlur(
-                                    set.id,
-                                    parseInt(e.target.value, 10) || 0,
-                                  )
-                                }
-                                className="w-12 h-7 bg-transparent text-center font-mono text-sm font-bold text-[var(--custom-a30)] outline-none focus:text-[var(--custom-a40)]"
-                              />
-                            </div>
-
-                            {/* Delete Set Button */}
-                            <button
-                              type="button"
-                              aria-label={`Delete set ${set.setNumber}`}
-                              onClick={() =>
-                                handleDeleteSet(exercise.id, set.id)
+                          <div className="flex min-w-0 items-center gap-1 px-2 py-1 rounded-xl bg-black/40 border border-white/5">
+                            <span className="text-[10px] font-mono text-[var(--custom-a20)] font-semibold uppercase">
+                              kg
+                            </span>
+                            <input
+                              type="number"
+                              min="0"
+                              step="0.5"
+                              value={set.weightKg}
+                              onFocus={(e) => e.target.select()}
+                              onChange={(e) =>
+                                handleWeightChange(
+                                  exercise.id,
+                                  set.id,
+                                  e.target.value,
+                                )
                               }
-                              className="w-8 h-8 rounded-xl neu-outset text-[var(--custom-a20)] hover:text-rose-400 transition-all cursor-pointer shrink-0 flex items-center justify-center"
-                            >
-                              <span className="material-symbols-outlined text-[16px]">
-                                delete
-                              </span>
-                            </button>
+                              onBlur={(e) =>
+                                handleWeightBlur(set.id, e.target.value)
+                              }
+                              className="min-w-0 flex-1 h-7 bg-transparent text-center font-mono text-sm font-bold text-[var(--custom-a30)] outline-none focus:text-[var(--custom-a40)]"
+                            />
                           </div>
+
+                          <div className="flex min-w-0 items-center gap-1 px-2 py-1 rounded-xl bg-black/40 border border-white/5">
+                            <span className="text-[10px] font-mono text-[var(--custom-a20)] font-semibold uppercase">
+                              reps
+                            </span>
+                            <input
+                              type="number"
+                              min="0"
+                              value={set.reps}
+                              onFocus={(e) => e.target.select()}
+                              onChange={(e) =>
+                                handleRepsChange(
+                                  exercise.id,
+                                  set.id,
+                                  e.target.value,
+                                )
+                              }
+                              onBlur={(e) =>
+                                handleRepsBlur(
+                                  set.id,
+                                  parseInt(e.target.value, 10) || 0,
+                                )
+                              }
+                              className="min-w-0 flex-1 h-7 bg-transparent text-center font-mono text-sm font-bold text-[var(--custom-a30)] outline-none focus:text-[var(--custom-a40)]"
+                            />
+                          </div>
+
+                          <button
+                            type="button"
+                            aria-label={`Delete set ${set.setNumber}`}
+                            onClick={() => handleDeleteSet(exercise.id, set.id)}
+                            className="w-8 h-8 rounded-xl neu-outset text-[var(--custom-a20)] hover:text-rose-400 transition-all cursor-pointer flex items-center justify-center"
+                          >
+                            <span className="material-symbols-outlined text-[16px]">
+                              delete
+                            </span>
+                          </button>
                         </div>
                       ))}
                     </div>
@@ -752,7 +707,7 @@ export default function ProgramDetailPage({
             <div className="w-full max-w-md bg-[var(--custom-a0)] border border-white/10 p-5 rounded-3xl flex flex-col gap-4 max-h-[80vh] shadow-xl">
               <div className="flex items-center justify-between border-b border-white/10 pb-3">
                 <h3 className="text-base font-bold text-[var(--custom-a30)]">
-                  Add Exercise to Program
+                  Add Exercises to Program
                 </h3>
                 <button
                   type="button"
@@ -765,23 +720,58 @@ export default function ProgramDetailPage({
                 </button>
               </div>
 
+              <div className="relative flex items-center">
+                <span className="material-symbols-outlined absolute left-3.5 text-[var(--custom-a20)] text-[18px]">
+                  search
+                </span>
+                <input
+                  type="text"
+                  value={exerciseSearchQuery}
+                  onChange={(e) => setExerciseSearchQuery(e.target.value)}
+                  placeholder="Search exercise or muscle group..."
+                  className="w-full h-11 pl-10 pr-9 rounded-2xl neu-inset text-sm text-[var(--custom-a30)] placeholder:text-[var(--custom-a20)]/50 focus:outline-none transition-all"
+                />
+                {exerciseSearchQuery && (
+                  <button
+                    type="button"
+                    aria-label="Clear exercise search"
+                    onClick={() => setExerciseSearchQuery("")}
+                    className="absolute right-3.5 text-[var(--custom-a20)] hover:text-white"
+                  >
+                    <span className="material-symbols-outlined text-[16px]">
+                      close
+                    </span>
+                  </button>
+                )}
+              </div>
+
               <div className="flex flex-col gap-2 overflow-y-auto max-h-[50vh] pr-1 no-scrollbar">
                 {loadingAvailable ? (
                   <div className="flex items-center justify-center gap-2 py-6 text-xs text-[var(--custom-a20)] font-medium">
                     <span className="w-3.5 h-3.5 rounded-full border-2 border-current border-t-transparent animate-spin"></span>
                     <span>Loading available exercises...</span>
                   </div>
-                ) : availableExercises.length > 0 ? (
-                  availableExercises.map((ex) => {
+                ) : filteredAvailableExercises.length > 0 ? (
+                  filteredAvailableExercises.map((ex) => {
                     const isAlreadyAdded = exercises.some(
                       (e) => e.id === ex.id,
                     );
+                    const isToggling = togglingExerciseIds.includes(ex.id);
                     return (
-                      <div
+                      <button
                         key={ex.id}
-                        className="flex items-center justify-between p-3 rounded-2xl neu-outset"
+                        type="button"
+                        disabled={isToggling}
+                        onClick={() => handleToggleExerciseInProgram(ex)}
+                        className={`flex items-center justify-between gap-3 p-3 rounded-2xl text-left transition-all ${
+                          isAlreadyAdded
+                            ? "neu-inset border border-[var(--custom-a40)]/50"
+                            : "neu-outset"
+                        } ${
+                          isToggling ? "opacity-70 cursor-wait" : "cursor-pointer"
+                        }`}
                       >
-                        <div className="flex flex-col">
+                        <div className="flex flex-col min-w-0">
                           <span className="text-sm font-bold text-[var(--custom-a30)]">
                             {ex.name}
                           </span>
@@ -789,34 +779,39 @@ export default function ProgramDetailPage({
                             {formatMuscleCategory(ex.category)}
                           </span>
                         </div>
-                        <button
-                          type="button"
-                          disabled={
-                            isAlreadyAdded || addingExerciseId === ex.id
-                          }
-                          onClick={() => handleAddExerciseToProgram(ex.id)}
-                          className={`h-8 px-3 rounded-xl text-xs font-semibold flex items-center gap-1 transition-all cursor-pointer ${
+                        <span
+                          className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${
                             isAlreadyAdded
-                              ? "neu-inset text-[var(--custom-a20)] cursor-not-allowed opacity-60"
-                              : "bg-[var(--custom-a40)] text-[var(--custom-a0)] hover:opacity-95 shadow-xs"
+                              ? "bg-[var(--custom-a40)] text-[var(--custom-a0)]"
+                              : "neu-outset text-[var(--custom-a20)]"
                           }`}
                         >
-                          {addingExerciseId === ex.id ? (
+                          {isToggling ? (
                             <span className="w-3.5 h-3.5 rounded-full border-2 border-current border-t-transparent animate-spin"></span>
-                          ) : isAlreadyAdded ? (
-                            <span>Added</span>
                           ) : (
-                            <span>Add</span>
+                            <span className="material-symbols-outlined text-[17px]">
+                              {isAlreadyAdded ? "check" : "add"}
+                            </span>
                           )}
-                        </button>
-                      </div>
+                        </span>
+                      </button>
                     );
                   })
                 ) : (
                   <div className="text-center py-6 text-xs text-[var(--custom-a20)]">
-                    No exercises found in database.
+                    No exercises match your search.
                   </div>
                 )}
+              </div>
+
+              <div className="flex items-center justify-end border-t border-white/10 pt-3">
+                <button
+                  type="button"
+                  onClick={() => setIsAddModalOpen(false)}
+                  className="h-11 px-4 rounded-2xl neu-outset text-xs font-semibold text-[var(--custom-a20)] hover:text-white transition-all cursor-pointer"
+                >
+                  Done
+                </button>
               </div>
             </div>
           </div>
