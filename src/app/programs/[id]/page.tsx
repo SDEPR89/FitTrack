@@ -572,7 +572,7 @@ export default function ProgramDetailPage({
                       {exercise.sets.map((set) => (
                         <div
                           key={set.id}
-                          className={`set-row grid grid-cols-[2.35rem_2.1rem_minmax(0,1fr)_minmax(0,0.82fr)_2rem] items-center gap-1.5 p-3 rounded-2xl transition-all sm:grid-cols-[2.5rem_3.25rem_minmax(7rem,1fr)_minmax(6.25rem,0.85fr)_2.25rem] sm:gap-2 ${
+                          className={`set-row grid grid-cols-[2.35rem_3rem_minmax(0,1fr)_minmax(0,0.82fr)_2rem] items-center gap-1.5 p-3 rounded-2xl transition-all sm:grid-cols-[2.5rem_3.25rem_minmax(7rem,1fr)_minmax(6.25rem,0.85fr)_2.25rem] sm:gap-2 ${
                             set.isChecked ? "neu-inset" : "neu-outset"
                           }`}
                         >
@@ -595,14 +595,13 @@ export default function ProgramDetailPage({
                             </span>
                           </button>
                           <span
-                            className={`text-[11px] font-semibold leading-tight ${
+                            className={`whitespace-nowrap text-center text-[11px] font-semibold leading-tight ${
                               set.isChecked
                                 ? "text-[var(--custom-a20)] line-through"
                                 : "text-[var(--custom-a30)]"
                             }`}
                           >
-                            Set<br />
-                            {set.setNumber}
+                            Set {set.setNumber}
                           </span>
 
                           <div className="flex min-w-0 items-center gap-1 px-2 py-1 rounded-xl bg-black/40 border border-white/5">
