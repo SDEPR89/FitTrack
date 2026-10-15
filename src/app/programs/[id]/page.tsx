@@ -634,7 +634,6 @@ export default function ProgramDetailPage({
                     </div>
                   </div>
 
-  // Workout Set Rows
   {exercise.sets.length > 0 ? (
     <div className="flex flex-col gap-2.5">
       {exercise.sets.map((set) => (
