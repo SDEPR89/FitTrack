@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, use, useRef } from "react";
+import React, { useState, useEffect, use, useRef, useCallback, useMemo } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Header } from "../../../components/Header";
@@ -71,35 +71,47 @@ export default function ProgramDetailPage({
   useEffect(() => {
     let isMounted = true;
 
-    async function fetchProgramDetail() {
+    async function loadInitialData() {
       try {
         setLoading(true);
-        const res = await fetch(`/api/programs/${programId}`, {
-          headers: wsHeader(workspaceId),
-        });
-        if (!res.ok) {
-          throw new Error("Failed to load program");
-        }
-        const data = await res.json();
-        if (isMounted && data && data.id) {
-          setProgram({
-            id: data.id,
-            name: data.name,
-            programTypeId: data.programTypeId,
-            exercises: data.exercises || [],
-          });
 
-          const rawExercises: ExerciseData[] = data.exercises || [];
-          const exercisesWithSets = rawExercises.map((ex) => ({
-            ...ex,
-            sets: ex.sets || [],
-          }));
-          setExercises([...exercisesWithSets].sort(byExerciseName));
+        // Fetch program details AND available exercises in parallel
+        const [progRes, availRes] = await Promise.all([
+          fetch(`/api/programs/${programId}`, {
+            headers: wsHeader(workspaceId),
+          }),
+          fetch("/api/exercises")
+        ]);
+
+        if (progRes.ok) {
+          const data = await progRes.json();
+          if (isMounted && data && data.id) {
+            setProgram({
+              id: data.id,
+              name: data.name,
+              programTypeId: data.programTypeId,
+              exercises: data.exercises || [],
+            });
+
+            const rawExercises: ExerciseData[] = data.exercises || [];
+            const exercisesWithSets = rawExercises.map((ex) => ({
+              ...ex,
+              sets: ex.sets || [],
+            }));
+            setExercises([...exercisesWithSets].sort(byExerciseName));
+          }
+        }
+
+        if (availRes.ok) {
+          const availData = await availRes.json();
+          if (isMounted && Array.isArray(availData)) {
+            setAvailableExercises(availData);
+          }
         }
       } catch (err) {
-        console.error("Error loading program detail:", err);
+        console.error("Error loading initial data:", err);
         if (isMounted) {
-          setToastMessage("Failed to load program details");
+          setToastMessage("Failed to load page data");
         }
       } finally {
         if (isMounted) {
@@ -108,15 +120,14 @@ export default function ProgramDetailPage({
       }
     }
 
-    fetchProgramDetail();
+    loadInitialData();
 
     return () => {
       isMounted = false;
     };
-  }, [programId]);
+  }, [programId, workspaceId]);
 
-  // Handle "Add workout" set creation for an exercise
-  const handleAddWorkoutSet = async (exerciseId: number) => {
+  const handleAddWorkoutSet = useCallback(async (exerciseId: number) => {
     try {
       setExercises((prev) =>
         prev.map((ex) =>
@@ -180,10 +191,9 @@ export default function ProgramDetailPage({
         ),
       );
     }
-  };
+  }, [exercises, workspaceId]);
 
-  // Independent field update helpers (PATCH /api/workoutSets/[id])
-  const patchSetField = async (
+  const patchSetField = useCallback(async (
     setId: number,
     fieldPayload: Partial<{
       setNumber: number;
@@ -209,9 +219,9 @@ export default function ProgramDetailPage({
       setToastMessage("Network error updating set");
       if (rollback) rollback();
     }
-  };
+  }, []);
 
-  const handleToggleChecked = (exerciseId: number, setId: number) => {
+  const handleToggleChecked = useCallback((exerciseId: number, setId: number) => {
     setExercises((prev) => {
       const exercise = prev.find((ex) => ex.id === exerciseId);
       const set = exercise?.sets.find((s) => s.id === setId);
@@ -247,9 +257,9 @@ export default function ProgramDetailPage({
 
       return updatedExercises;
     });
-  };
+  }, [patchSetField]);
 
-  const handleWeightChange = (
+  const handleWeightChange = useCallback((
     exerciseId: number,
     setId: number,
     val: string,
@@ -297,14 +307,14 @@ export default function ProgramDetailPage({
         );
       });
     }, 500);
-  };
+  }, [exercises, patchSetField]);
 
-  const handleWeightBlur = (setId: number, val: string) => {
+  const handleWeightBlur = useCallback((setId: number, val: string) => {
     const formatted = val === "" ? "0" : String(parseFloat(val) || 0);
     patchSetField(setId, { weightKg: formatted });
-  };
+  }, [patchSetField]);
 
-  const handleRepsChange = (
+  const handleRepsChange = useCallback((
     exerciseId: number,
     setId: number,
     rawVal: string,
@@ -348,14 +358,14 @@ export default function ProgramDetailPage({
         );
       });
     }, 500);
-  };
+  }, [exercises, patchSetField]);
 
-  const handleRepsBlur = (setId: number, val: number) => {
+  const handleRepsBlur = useCallback((setId: number, val: number) => {
     const safeReps = Math.max(0, val || 0);
     patchSetField(setId, { reps: safeReps });
-  };
+  }, [patchSetField]);
 
-  const handleDeleteSet = async (exerciseId: number, setId: number) => {
+  const handleDeleteSet = useCallback(async (exerciseId: number, setId: number) => {
     setExercises((prev) =>
       prev.map((ex) => {
         if (ex.id !== exerciseId) return ex;
@@ -370,25 +380,30 @@ export default function ProgramDetailPage({
     } catch (err) {
       console.error("Error deleting set:", err);
     }
-  };
+  }, []);
 
   // Add Exercise to Program Modal
   const handleOpenAddExerciseModal = async () => {
     setIsAddModalOpen(true);
     setExerciseSearchQuery("");
-    try {
-      setLoadingAvailable(true);
-      const res = await fetch("/api/exercises");
-      if (res.ok) {
-        const data = await res.json();
-        if (Array.isArray(data)) {
-          setAvailableExercises(data);
+
+    // availableExercises are now pre-fetched in useEffect
+    // Only fetch if for some reason the list is empty
+    if (availableExercises.length === 0) {
+      try {
+        setLoadingAvailable(true);
+        const res = await fetch("/api/exercises");
+        if (res.ok) {
+          const data = await res.json();
+          if (Array.isArray(data)) {
+            setAvailableExercises(data);
+          }
         }
+      } catch (err) {
+        console.error("Failed to load available exercises:", err);
+      } finally {
+        setLoadingAvailable(false);
       }
-    } catch (err) {
-      console.error("Failed to load available exercises:", err);
-    } finally {
-      setLoadingAvailable(false);
     }
   };
 
@@ -481,15 +496,24 @@ export default function ProgramDetailPage({
     }
   };
 
-  const totalSets = exercises.reduce((acc, ex) => acc + ex.sets.length, 0);
-  const completedSets = exercises.reduce(
-    (acc, ex) => acc + ex.sets.filter((s) => s.isChecked).length,
-    0,
-  );
-  const progressPercent =
-    totalSets > 0 ? Math.round((completedSets / totalSets) * 100) : 0;
-  const normalizedExerciseSearch = exerciseSearchQuery.trim().toLowerCase();
-  const sortedExercises = [...exercises].sort(byExerciseName);
+  const totalSets = useMemo(() =>
+    exercises.reduce((acc, ex) => acc + ex.sets.length, 0),
+  [exercises]);
+  const completedSets = useMemo(() =>
+    exercises.reduce(
+      (acc, ex) => acc + ex.sets.filter((s) => s.isChecked).length,
+      0,
+    ),
+  [exercises]);
+  const progressPercent = useMemo(() =>
+    totalSets > 0 ? Math.round((completedSets / totalSets) * 100) : 0,
+  [totalSets, completedSets]);
+  const normalizedExerciseSearch = useMemo(() =>
+    exerciseSearchQuery.trim().toLowerCase(),
+  [exerciseSearchQuery]);
+  const sortedExercises = useMemo(() =>
+    [...exercises].sort(byExerciseName),
+  [exercises]);
   const filteredAvailableExercises = availableExercises
     .filter((ex) => {
       if (!normalizedExerciseSearch) return true;

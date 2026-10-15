@@ -1,6 +1,6 @@
 "use client";
 
-import React, { memo } from "react";
+import React, { memo, useState, useEffect } from "react";
 
 interface SetData {
   id: number;
@@ -31,6 +31,14 @@ export const SetRow = memo(({
   onRepsBlur,
   onDeleteSet
 }: SetRowProps) => {
+  const [localWeight, setLocalWeight] = useState(set.weightKg);
+  const [localReps, setLocalReps] = useState(set.reps);
+
+  useEffect(() => {
+    setLocalWeight(set.weightKg);
+    setLocalReps(set.reps);
+  }, [set.weightKg, set.reps]);
+
   return (
     <div
       className={`set-row grid grid-cols-[2.35rem_3rem_minmax(0,1fr)_minmax(0,0.82fr)_2rem] items-center gap-1.5 p-3 rounded-2xl transition-all sm:grid-cols-[2.5rem_3.25rem_minmax(7rem,1fr)_minmax(6.25rem,0.85fr)_2.25rem] sm:gap-2 ${
@@ -71,9 +79,13 @@ export const SetRow = memo(({
           type="number"
           min="0"
           step="0.5"
-          value={set.weightKg}
+          value={localWeight}
           onFocus={(e) => e.target.select()}
-          onChange={(e) => onWeightChange(exerciseId, set.id, e.target.value)}
+          onChange={(e) => {
+            const val = e.target.value;
+            setLocalWeight(val);
+            onWeightChange(exerciseId, set.id, val);
+          }}
           onBlur={(e) => onWeightBlur(set.id, e.target.value)}
           className="min-w-0 flex-1 h-7 bg-transparent text-center font-mono text-sm font-bold text-[var(--custom-a30)] outline-none focus:text-[var(--custom-a40)]"
         />
@@ -86,9 +98,13 @@ export const SetRow = memo(({
         <input
           type="number"
           min="0"
-          value={set.reps}
+          value={localReps}
           onFocus={(e) => e.target.select()}
-          onChange={(e) => onRepsChange(exerciseId, set.id, e.target.value)}
+          onChange={(e) => {
+            const val = e.target.value;
+            setLocalReps(parseInt(val, 10) || 0);
+            onRepsChange(exerciseId, set.id, val);
+          }}
           onBlur={(e) => onRepsBlur(set.id, parseInt(e.target.value, 10) || 0)}
           className="min-w-0 flex-1 h-7 bg-transparent text-center font-mono text-sm font-bold text-[var(--custom-a30)] outline-none focus:text-[var(--custom-a40)]"
         />
