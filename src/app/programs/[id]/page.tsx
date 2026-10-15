@@ -1,11 +1,12 @@
 "use client";
 
-import React, { useState, useEffect, use } from "react";
+import React, { useState, useEffect, use, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Header } from "../../../components/Header";
 import { BottomNav } from "../../../components/BottomNav";
 import { Toast } from "../../../components/Toast";
+import { SetRow } from "../../../components/SetRow";
 import { useWorkspace, wsHeader } from "../../../hooks/useWorkspace";
 
 interface SetData {
@@ -55,6 +56,8 @@ export default function ProgramDetailPage({
   const [exercises, setExercises] = useState<ExerciseData[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [toastMessage, setToastMessage] = useState<string>("");
+  const debounceTimer = useRef<NodeJS.Timeout | null>(null);
+
 
   // Add Exercise Modal state
   const [isAddModalOpen, setIsAddModalOpen] = useState<boolean>(false);
@@ -71,7 +74,9 @@ export default function ProgramDetailPage({
     async function fetchProgramDetail() {
       try {
         setLoading(true);
-        const res = await fetch(`/api/programs/${programId}`);
+        const res = await fetch(`/api/programs/${programId}`, {
+          headers: wsHeader(workspaceId),
+        });
         if (!res.ok) {
           throw new Error("Failed to load program");
         }
@@ -83,20 +88,12 @@ export default function ProgramDetailPage({
             programTypeId: data.programTypeId,
             exercises: data.exercises || [],
           });
+
           const rawExercises: ExerciseData[] = data.exercises || [];
-          const exercisesWithSets = await Promise.all(
-            rawExercises.map(async (ex) => {
-              const setsRes = await fetch(
-                `/api/workoutSets?exerciseId=${ex.id}`,
-                { headers: wsHeader(workspaceId) },
-              );
-              const setsData = setsRes.ok ? await setsRes.json() : [];
-              return {
-                ...ex,
-                sets: Array.isArray(setsData) ? setsData : [],
-              };
-            }),
-          );
+          const exercisesWithSets = rawExercises.map((ex) => ({
+            ...ex,
+            sets: ex.sets || [],
+          }));
           setExercises([...exercisesWithSets].sort(byExerciseName));
         }
       } catch (err) {
@@ -194,6 +191,7 @@ export default function ProgramDetailPage({
       reps: number;
       isChecked: boolean;
     }>,
+    rollback?: () => void,
   ) => {
     try {
       const res = await fetch(`/api/workoutSets/${setId}`, {
@@ -204,28 +202,51 @@ export default function ProgramDetailPage({
       if (!res.ok) {
         const errData = await res.json().catch(() => ({}));
         setToastMessage(errData.error || "Failed to update set");
+        if (rollback) rollback();
       }
     } catch (err) {
       console.error("Error patching set:", err);
       setToastMessage("Network error updating set");
+      if (rollback) rollback();
     }
   };
 
   const handleToggleChecked = (exerciseId: number, setId: number) => {
-    setExercises((prev) =>
-      prev.map((ex) => {
+    setExercises((prev) => {
+      const exercise = prev.find((ex) => ex.id === exerciseId);
+      const set = exercise?.sets.find((s) => s.id === setId);
+      if (!set) return prev;
+
+      const previousValue = set.isChecked;
+      const nextChecked = !previousValue;
+
+      // Optimistic update
+      const updatedExercises = prev.map((ex) => {
         if (ex.id !== exerciseId) return ex;
         return {
           ...ex,
-          sets: ex.sets.map((s) => {
-            if (s.id !== setId) return s;
-            const nextChecked = !s.isChecked;
-            patchSetField(setId, { isChecked: nextChecked });
-            return { ...s, isChecked: nextChecked };
-          }),
+          sets: ex.sets.map((s) =>
+            s.id === setId ? { ...s, isChecked: nextChecked } : s,
+          ),
         };
-      }),
-    );
+      });
+
+      patchSetField(setId, { isChecked: nextChecked }, () => {
+        setExercises((current) =>
+          current.map((ex) => {
+            if (ex.id !== exerciseId) return ex;
+            return {
+              ...ex,
+              sets: ex.sets.map((s) =>
+                s.id === setId ? { ...s, isChecked: previousValue } : s,
+              ),
+            };
+          })
+        );
+      });
+
+      return updatedExercises;
+    });
   };
 
   const handleWeightChange = (
@@ -241,6 +262,12 @@ export default function ProgramDetailPage({
     ) {
       cleanVal = cleanVal.replace(/^0+/, "");
     }
+
+    // Capture previous value for rollback
+    const exercise = exercises.find((ex) => ex.id === exerciseId);
+    const set = exercise?.sets.find((s) => s.id === setId);
+    const previousValue = set?.weightKg;
+
     setExercises((prev) =>
       prev.map((ex) => {
         if (ex.id !== exerciseId) return ex;
@@ -252,6 +279,24 @@ export default function ProgramDetailPage({
         };
       }),
     );
+
+    if (debounceTimer.current) clearTimeout(debounceTimer.current);
+    debounceTimer.current = setTimeout(() => {
+      const formatted = cleanVal === "" ? "0" : String(parseFloat(cleanVal) || 0);
+      patchSetField(setId, { weightKg: formatted }, () => {
+        setExercises((current) =>
+          current.map((ex) => {
+            if (ex.id !== exerciseId) return ex;
+            return {
+              ...ex,
+              sets: ex.sets.map((s) =>
+                s.id === setId ? { ...s, weightKg: previousValue ?? "0" } : s,
+              ),
+            };
+          })
+        );
+      });
+    }, 500);
   };
 
   const handleWeightBlur = (setId: number, val: string) => {
@@ -269,6 +314,12 @@ export default function ProgramDetailPage({
       cleanVal = cleanVal.replace(/^0+/, "");
     }
     const safeReps = Math.max(0, parseInt(cleanVal, 10) || 0);
+
+    // Capture previous value for rollback
+    const exercise = exercises.find((ex) => ex.id === exerciseId);
+    const set = exercise?.sets.find((s) => s.id === setId);
+    const previousValue = set?.reps;
+
     setExercises((prev) =>
       prev.map((ex) => {
         if (ex.id !== exerciseId) return ex;
@@ -280,6 +331,23 @@ export default function ProgramDetailPage({
         };
       }),
     );
+
+    if (debounceTimer.current) clearTimeout(debounceTimer.current);
+    debounceTimer.current = setTimeout(() => {
+      patchSetField(setId, { reps: safeReps }, () => {
+        setExercises((current) =>
+          current.map((ex) => {
+            if (ex.id !== exerciseId) return ex;
+            return {
+              ...ex,
+              sets: ex.sets.map((s) =>
+                s.id === setId ? { ...s, reps: previousValue ?? 0 } : s,
+              ),
+            };
+          })
+        );
+      });
+    }, 500);
   };
 
   const handleRepsBlur = (setId: number, val: number) => {
@@ -566,112 +634,28 @@ export default function ProgramDetailPage({
                     </div>
                   </div>
 
-                  {/* Workout Set Rows */}
-                  {exercise.sets.length > 0 ? (
-                    <div className="flex flex-col gap-2.5">
-                      {exercise.sets.map((set) => (
-                        <div
-                          key={set.id}
-                          className={`set-row grid grid-cols-[2.35rem_3rem_minmax(0,1fr)_minmax(0,0.82fr)_2rem] items-center gap-1.5 p-3 rounded-2xl transition-all sm:grid-cols-[2.5rem_3.25rem_minmax(7rem,1fr)_minmax(6.25rem,0.85fr)_2.25rem] sm:gap-2 ${
-                            set.isChecked ? "neu-inset" : "neu-outset"
-                          }`}
-                        >
-                          <button
-                            type="button"
-                            aria-label={`Mark set ${set.setNumber} ${
-                              set.isChecked ? "incomplete" : "complete"
-                            }`}
-                            onClick={() =>
-                              handleToggleChecked(exercise.id, set.id)
-                            }
-                            className={`w-9 h-9 rounded-xl flex items-center justify-center cursor-pointer tactile-checkbox ${
-                              set.isChecked
-                                ? "tactile-checkbox-checked"
-                                : "neu-outset text-transparent hover:text-[var(--custom-a20)]/40"
-                            }`}
-                          >
-                            <span className="material-symbols-outlined text-[18px] font-bold">
-                              check
-                            </span>
-                          </button>
-                          <span
-                            className={`whitespace-nowrap text-center text-[11px] font-semibold leading-tight ${
-                              set.isChecked
-                                ? "text-[var(--custom-a20)] line-through"
-                                : "text-[var(--custom-a30)]"
-                            }`}
-                          >
-                            Set {set.setNumber}
-                          </span>
-
-                          <div className="flex min-w-0 items-center gap-1 px-2 py-1 rounded-xl bg-black/40 border border-white/5">
-                            <span className="text-[10px] font-mono text-[var(--custom-a20)] font-semibold uppercase">
-                              kg
-                            </span>
-                            <input
-                              type="number"
-                              min="0"
-                              step="0.5"
-                              value={set.weightKg}
-                              onFocus={(e) => e.target.select()}
-                              onChange={(e) =>
-                                handleWeightChange(
-                                  exercise.id,
-                                  set.id,
-                                  e.target.value,
-                                )
-                              }
-                              onBlur={(e) =>
-                                handleWeightBlur(set.id, e.target.value)
-                              }
-                              className="min-w-0 flex-1 h-7 bg-transparent text-center font-mono text-sm font-bold text-[var(--custom-a30)] outline-none focus:text-[var(--custom-a40)]"
-                            />
-                          </div>
-
-                          <div className="flex min-w-0 items-center gap-1 px-2 py-1 rounded-xl bg-black/40 border border-white/5">
-                            <span className="text-[10px] font-mono text-[var(--custom-a20)] font-semibold uppercase">
-                              reps
-                            </span>
-                            <input
-                              type="number"
-                              min="0"
-                              value={set.reps}
-                              onFocus={(e) => e.target.select()}
-                              onChange={(e) =>
-                                handleRepsChange(
-                                  exercise.id,
-                                  set.id,
-                                  e.target.value,
-                                )
-                              }
-                              onBlur={(e) =>
-                                handleRepsBlur(
-                                  set.id,
-                                  parseInt(e.target.value, 10) || 0,
-                                )
-                              }
-                              className="min-w-0 flex-1 h-7 bg-transparent text-center font-mono text-sm font-bold text-[var(--custom-a30)] outline-none focus:text-[var(--custom-a40)]"
-                            />
-                          </div>
-
-                          <button
-                            type="button"
-                            aria-label={`Delete set ${set.setNumber}`}
-                            onClick={() => handleDeleteSet(exercise.id, set.id)}
-                            className="w-8 h-8 rounded-xl neu-outset text-[var(--custom-a20)] hover:text-rose-400 transition-all cursor-pointer flex items-center justify-center"
-                          >
-                            <span className="material-symbols-outlined text-[16px]">
-                              delete
-                            </span>
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="flex flex-col items-center justify-center py-6 text-center text-xs text-[var(--custom-a20)] font-medium">
-                      No sets logged yet. Tap &quot;Add workout&quot; to begin.
-                    </div>
-                  )}
+  // Workout Set Rows
+  {exercise.sets.length > 0 ? (
+    <div className="flex flex-col gap-2.5">
+      {exercise.sets.map((set) => (
+        <SetRow
+          key={set.id}
+          set={set}
+          exerciseId={exercise.id}
+          onToggleChecked={handleToggleChecked}
+          onWeightChange={handleWeightChange}
+          onWeightBlur={handleWeightBlur}
+          onRepsChange={handleRepsChange}
+          onRepsBlur={handleRepsBlur}
+          onDeleteSet={handleDeleteSet}
+        />
+      ))}
+    </div>
+  ) : (
+    <div className="flex flex-col items-center justify-center py-6 text-center text-xs text-[var(--custom-a20)] font-medium">
+      No sets logged yet. Tap &quot;Add workout&quot; to begin.
+    </div>
+  )}
                 </article>
               ))}
             </div>
